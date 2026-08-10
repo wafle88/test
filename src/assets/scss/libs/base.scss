@@ -1,0 +1,56 @@
+@use "sass:math";
+@use 'globalVars' as *;
+
+$SU:10;
+$LOW_RES:1441;
+$MAXW:1920;
+
+$vw1:math.div($SU,$MAXW) * 100;
+* {}
+html{ font:{ size:$vw1+vw; };
+  body{}
+}
+a{ color:#000; }
+button{ -webkit-appearance: none; border:none; margin:0; padding:0; background:transparent; }
+video{ width:100%; }
+br.pc{ display: block; }
+br.m{ display: none; }
+img{ width:100%; }
+html{
+  width:100%;
+  max-width:1920px;
+  margin:0 auto;
+}
+p,h1,h2,h3,h4,h5,h6,span,em,i,a{ display:block; transform:rotate(0.03deg); -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale; -webkit-text-stroke: 0.45px rgba(0, 0, 0, 0.1);}
+html body{
+}
+.no-drag {
+  -webkit-user-drag: none;
+  -khtml-user-drag: none;
+  -moz-user-drag: none;
+  -o-user-drag: none;
+  user-drag: none;
+
+  /* 텍스트 선택도 막고 싶다면: */
+  user-select: none;
+}
+
+
+/*@media screen and (max-width:$MAX_LIMIT_W+px){
+  html{ font-size:( ($vw1 * $MAX_LIMIT_W * 0.01) )+px;
+    //body{ max-width:1600px; }
+  }
+}*/
+@media screen and (max-width:$MTW+px){
+  br.pc{ display: none; }
+  br.m{ display: block; }
+  html{ min-width:100%;
+    //body{ max-width:1600px; }
+  }
+  video{ width:auto; height:100vh; }
+}
+@media screen and (min-width:$MAXW+px){
+  html{ font-size:( $SU )+px;
+  }
+}

@@ -1,0 +1,98 @@
+@font-face {
+  font-family: 'Cass OTF';
+  src: url('assets/webfont/CassOTF_Bold.otf') format('opentype');
+  font-weight: 700;  /* bold */
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Cass OTF';
+  src: url('assets/webfont/CassOTF_Regualr.otf') format('opentype');
+  font-weight: 400;  /* regular */
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Cass OTF';
+  src: url('assets/webfont/CassOTF_SemiBold.otf') format('opentype');
+  font-weight: 600;  /* semibold */
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'Pretendard';
+  font-weight: 900;
+  src: local('Pretendard Black'), url(assets/webfont/Pretendard-Black.woff2) format('woff2');
+}
+
+@font-face {
+  font-family: 'Pretendard';
+  font-weight: 800;
+  src: local('Pretendard ExtraBold'), url(assets/webfont/Pretendard-ExtraBold.woff2) format('woff2');
+}
+
+@font-face {
+  font-family: 'Pretendard';
+  font-weight: 700;
+  src: local('Pretendard Bold'), url(assets/webfont/Pretendard-Bold.woff2) format('woff2');
+}
+
+@font-face {
+  font-family: 'Pretendard';
+  font-weight: 600;
+  src: local('Pretendard SemiBold'), url(assets/webfont/Pretendard-SemiBold.woff2) format('woff2');
+}
+
+@font-face {
+  font-family: 'Pretendard';
+  font-weight: 500;
+  src: local('Pretendard Medium'), url(assets/webfont/Pretendard-Medium.woff2) format('woff2');
+}
+
+@font-face {
+  font-family: 'Pretendard';
+  font-weight: 400;
+  src: local('Pretendard Regular'), url(assets/webfont/Pretendard-Regular.woff2) format('woff2');
+}
+
+@font-face {
+  font-family: 'Pretendard';
+  font-weight: 300;
+  src: local('Pretendard Light'), url(assets/webfont/Pretendard-Light.woff2) format('woff2');
+}
+
+@font-face {
+  font-family: 'Pretendard';
+  font-weight: 200;
+  src: local('Pretendard ExtraLight'), url(assets/webfont/Pretendard-ExtraLight.woff2) format('woff2');
+}
+
+@font-face {
+  font-family: 'Pretendard';
+  font-weight: 100;
+  src: local('Pretendard Thin'), url(assets/webfont/Pretendard-Thin.woff2) format('woff2');
+}
+
+@font-face {
+  font-family: 'JASOSans';
+  src: url('assets/webfont/JASOSans-Regular.woff2') format('opentype');
+  font-weight: 400;  /* regular */
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'JASOSans';
+  src: url('assets/webfont/JASOSans-ExtraBold.woff2') format('opentype');
+  font-weight: 800;  /* JASOSans-ExtraBold */
+  font-style: normal;
+}
+
+@font-face {
+  font-family: 'JASOSans';
+  src: url('assets/webfont/JASOSans-Black.woff2') format('opentype');
+  font-weight: 1000;  /* JASOSans-Black */
+  font-style: normal;
+}
+
+$pretendard:'pretendard';
+$jaso:'JASOSans';

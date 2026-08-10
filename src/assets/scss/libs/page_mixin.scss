@@ -1,0 +1,98 @@
+@use 'globalVars' as *;
+@use "sass:math";
+
+
+
+@mixin calPx_Vw($property,$size) {
+  @media (min-width: #{$LOW_RES}px) {
+    #{$property}: #{$size} + px;
+  }
+
+  @media (max-width: #{$LOW_RES}px) {
+    #{$property}: math.div($size, $LOW_RES) * 100 + vw;
+  }
+}
+
+@mixin renewCampaignRem($property,$size) {
+  @media (min-width: #{$MAXW}px) {
+    #{$property}: #{$size} + px;
+  }
+
+  @media (max-width: #{$MAXW}px) {
+    #{$property}: math.div($size, $MAXW) * 100 + vw;
+  }
+}
+
+
+@function calVW( $size, $WW:720 ){
+  @return  math.div($size, $WW) * 100+vw;
+}
+
+@function calVW_Campaign( $size, $WW:1216 ){
+  @return  math.div($size, $WW) * 100+vw;
+}
+
+@function calFVW( $size, $WW:1920 ){
+  @return  math.div($size, $WW) * 100 * 1.33240805+vw;
+}
+
+@mixin calAP_REM($property,$size,$res:2002) {
+  @media (min-width: #{2002}px) {
+    #{$property}: #{$size} + px;
+  }
+
+  @media (max-width: #{2001}px) {
+    #{$property}: math.div($size, $res) * 100 + vw;
+  }
+}
+
+@mixin calPx_FVw($property,$size) {
+  @media (min-width: #{$MAXW}px) {
+    #{$property}: #{$size} + px;
+  }
+
+  @media (max-width: #{$MAXW}px) {
+    #{$property}: math.div($size, $MAXW) * 100 + vw;
+  }
+}
+
+@function calREM( $size,$m:false ){
+  @if $m == true{
+    @return ( math.div($size, $SU)*0.1 )+rem;
+  }@else{
+    @return (
+      math.div($size, $SU)+rem
+    );
+  }
+}
+
+@function calREMH( $size ){
+  @return math.div($size, 3840) * 100+vh;
+}
+
+@function calLayoutREM( $size,$mode:false,$layout:'w' ){
+  @if($mode == true){
+    @if( $layout == 'w' ){
+      @return math.div(1080, $SU)+rem
+    }@else{
+      @return math.div(1920, $SU)+rem
+    }
+
+  }@else{
+    @return math.div($size, $SU)+rem
+  }
+}
+
+
+// function
+@function calSize( $size, $m:true, $WW:720, ){
+  @if $m == true{
+    @return  math.div($size, $WW) * 100+vw;
+  }@else{
+    @return $size+px;
+  }
+}
+
+@function calVH( $dis ){
+  @return  math.div($dis, $LOW_RES) * 100+vw;
+}

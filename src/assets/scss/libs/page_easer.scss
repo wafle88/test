@@ -1,0 +1,23 @@
+$easeInQuad : cubic-bezier(0.550, 0.085, 0.680, 0.530);
+$easeInCubic : cubic-bezier(0.550, 0.055, 0.675, 0.190);
+$easeInQuart : cubic-bezier(0.895, 0.030, 0.685, 0.220);
+
+
+$easeOutQuad : cubic-bezier(0.250, 0.460, 0.450, 0.940);
+$easeOutCubic : cubic-bezier(0.215, 0.610, 0.355, 1.000);
+$easeOutQuart : cubic-bezier(0.165, 0.840, 0.440, 1.000);
+$easeOutExpo : cubic-bezier(0.190, 1.000, 0.220, 1.000);
+
+
+$easeInOutQuad : cubic-bezier(0.455, 0.030, 0.515, 0.955);
+$easeInOutCubic : cubic-bezier(0.645, 0.045, 0.355, 1.000);
+$easeInOutQuart : cubic-bezier(0.770, 0.000, 0.175, 1.000);
+
+
+$easeOutBack : cubic-bezier(0.175, 0.885, 0.320, 1.275);
+$easeInOutBack : cubic-bezier(0.680, 0, 0.265, 1);
+$easeOutElastic : cubic-bezier(0.64, 0, 0.78, 0);
+
+@mixin customFade(){
+  transition:transform 0.4s $easeOutCubic, opacity 0.4s linear;
+}

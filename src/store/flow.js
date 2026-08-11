@@ -11,7 +11,7 @@ export function goTo(step) {
 }
 
 export function next() {
-  if (flow.step < 8) flow.step += 1;
+  if (flow.step < 4) flow.step += 1;
 }
 
 export function prev() {

@@ -5,10 +5,14 @@ if (require('electron-squirrel-startup')) {
   app.quit();
 }
 
+// 개발 중에는 소스 트리의 아이콘을 직접 참조 (빌드된 main.js 기준 두 단계 상위 = 프로젝트 루트)
+const devIconPath = path.join(__dirname, '../../src/assets/icon.png');
+
 const createWindow = () => {
   const mainWindow = new BrowserWindow({
     width: 1920,
     height: 1080,
+    icon: devIconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
@@ -26,6 +30,9 @@ const createWindow = () => {
 };
 
 app.whenReady().then(() => {
+  if (process.platform === 'darwin' && app.dock) {
+    app.dock.setIcon(devIconPath);
+  }
   createWindow();
 
   app.on('activate', () => {

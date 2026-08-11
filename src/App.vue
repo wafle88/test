@@ -1,19 +1,29 @@
 <script setup>
-import { defineAsyncComponent } from 'vue';
 import { flow, goTo } from './store/flow.js';
+import Step01 from './views/Step01.vue';
+import Step02 from './views/Step02.vue';
+import Step03 from './views/Step03.vue';
+import Step04 from './views/Step04.vue';
+import stripPattern from './assets/images/strip_pattern.svg';
+import dejavuBg from './assets/images/dejavu_bg_pattern.svg';
+import step01Bg from './assets/images/step01_bg.jpg';
+import portrait from './assets/images/portrait.png';
+import idCard from './assets/images/id_card.png';
+
+// 첫 진입 시 이미지 pop-in을 막기 위해 앱 부팅 시점에 프리로드
+[stripPattern, dejavuBg, step01Bg, portrait, idCard].forEach((src) => {
+  const img = new Image();
+  img.src = src;
+});
 
 const steps = {
-  1: defineAsyncComponent(() => import('./views/Step01.vue')),
-  2: defineAsyncComponent(() => import('./views/Step02.vue')),
-  3: defineAsyncComponent(() => import('./views/Step03.vue')),
-  4: defineAsyncComponent(() => import('./views/Step04.vue')),
-  5: defineAsyncComponent(() => import('./views/Step05.vue')),
-  6: defineAsyncComponent(() => import('./views/Step06.vue')),
-  7: defineAsyncComponent(() => import('./views/Step07.vue')),
-  8: defineAsyncComponent(() => import('./views/Step08.vue')),
+  1: Step01,
+  2: Step02,
+  3: Step03,
+  4: Step04,
 };
 
-const stepIds = [1, 2, 3, 4, 5, 6, 7, 8];
+const stepIds = [1, 2, 3, 4];
 </script>
 
 <template>
@@ -38,7 +48,7 @@ const stepIds = [1, 2, 3, 4, 5, 6, 7, 8];
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  background: #000;
+  background: #ff393c;
 }
 .dev-nav {
   position: fixed;

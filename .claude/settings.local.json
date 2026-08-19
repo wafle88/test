@@ -1,0 +1,32 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm --version)",
+      "Read(//private/tmp/**)",
+      "Bash(rm -rf dejavu-scaffold)",
+      "Bash(npx --yes create-electron-app@latest dejavu-scaffold --template=webpack)",
+      "Bash(mkdir -p /tmp/npm-cache-dejavu)",
+      "Bash(npm_config_cache=/tmp/npm-cache-dejavu npx --yes create-electron-app@latest dejavu-scaffold --template=webpack)",
+      "Bash(cp -R /tmp/dejavu-scaffold/src /tmp/dejavu-scaffold/node_modules /Users/waffle/WebstormProjects/dejavu/)",
+      "Bash(cp /tmp/dejavu-scaffold/forge.config.js /tmp/dejavu-scaffold/package.json /tmp/dejavu-scaffold/package-lock.json /tmp/dejavu-scaffold/webpack.main.config.js /tmp/dejavu-scaffold/webpack.renderer.config.js /tmp/dejavu-scaffold/webpack.rules.js /Users/waffle/WebstormProjects/dejavu/)",
+      "Bash(cp /tmp/dejavu-scaffold/.gitignore /Users/waffle/WebstormProjects/dejavu/.gitignore.scaffold)",
+      "Bash(rm /Users/waffle/WebstormProjects/dejavu/.gitignore.scaffold)",
+      "Bash(rm -rf /tmp/dejavu-scaffold)",
+      "Bash(npm_config_cache=/tmp/npm-cache-dejavu timeout 60 npm start)",
+      "Bash(npm uninstall *)",
+      "Bash(npm install *)",
+      "Bash(rm src/views/Step05.vue src/views/Step06.vue)",
+      "Bash(git mv *)",
+      "Bash(command -v magick)",
+      "Bash(command -v convert)",
+      "Bash(command -v sips)",
+      "Bash(command -v iconutil)",
+      "Bash(command -v python3)",
+      "Bash(sips *)",
+      "Bash(python3 *)",
+      "Bash(git restore *)",
+      "Bash(git remote *)",
+      "Bash(git push *)"
+    ]
+  }
+}

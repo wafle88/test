@@ -589,8 +589,9 @@ var require_electron_squirrel_startup = /* @__PURE__ */ __commonJSMin(((exports,
 }));
 //#endregion
 //#region src/main.js
-var { app, BrowserWindow } = require("electron");
+var { app, BrowserWindow, ipcMain, dialog } = require("electron");
 var path = require("node:path");
+var fs = require("node:fs/promises");
 if (require_electron_squirrel_startup()) app.quit();
 var devIconPath = path.join(__dirname, "../../src/assets/icon.png");
 var createWindow = () => {
@@ -600,12 +601,100 @@ var createWindow = () => {
 		icon: devIconPath,
 		webPreferences: { preload: path.join(__dirname, "preload.js") }
 	});
-	mainWindow.loadURL("http://localhost:5173");
+	mainWindow.loadURL("http://localhost:5174");
 	mainWindow.webContents.openDevTools();
 };
+var CARD_PAGE_INCH = {
+	width: 53.98 / 25.4,
+	height: 85.6 / 25.4
+};
+var PRINT_RENDER_TIMEOUT = 15e3;
+async function renderCardPdf(payload) {
+	const win = new BrowserWindow({
+		show: false,
+		width: 420,
+		height: 660,
+		webPreferences: { preload: path.join(__dirname, "preload.js") }
+	});
+	try {
+		win.webContents.ipc.handle("card:print-payload", () => payload);
+		const rendered = new Promise((resolve, reject) => {
+			const timer = setTimeout(() => reject(/* @__PURE__ */ new Error("인쇄용 카드 렌더링이 시간 내에 끝나지 않았습니다.")), PRINT_RENDER_TIMEOUT);
+			win.webContents.ipc.once("card:print-ready", () => {
+				clearTimeout(timer);
+				resolve();
+			});
+		});
+		await win.loadURL(`http://localhost:5174?mode=print`);
+		await rendered;
+		return await win.webContents.printToPDF({
+			printBackground: true,
+			preferCSSPageSize: true,
+			pageSize: CARD_PAGE_INCH,
+			margins: {
+				top: 0,
+				bottom: 0,
+				left: 0,
+				right: 0
+			}
+		});
+	} finally {
+		win.destroy();
+	}
+}
+function cardOutputDir() {
+	return app.isPackaged ? path.join(app.getPath("documents"), "dejavu_cards") : path.join(__dirname, "../../cards");
+}
+function pdfFileName(name) {
+	const safeName = String(name || "").replace(/[\\/:*?"<>|]/g, "").trim();
+	const d = /* @__PURE__ */ new Date();
+	const pad = (n) => String(n).padStart(2, "0");
+	const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
+	return `dejavu_card_${safeName ? `${safeName}_` : ""}${stamp}.pdf`;
+}
+ipcMain.handle("card:export-pdf", async (event, payload) => {
+	const filePath = path.join(cardOutputDir(), pdfFileName(payload?.name));
+	try {
+		const pdf = await renderCardPdf(payload ?? {});
+		await fs.mkdir(path.dirname(filePath), { recursive: true });
+		await fs.writeFile(filePath, pdf);
+		return {
+			canceled: false,
+			filePath
+		};
+	} catch (err) {
+		dialog.showErrorBox("카드 PDF 저장 실패", `${filePath}\n\n${err.message}`);
+		throw err;
+	}
+});
 app.whenReady().then(() => {
 	if (process.platform === "darwin" && app.dock) app.dock.setIcon(devIconPath);
 	createWindow();
+	if (process.env.DEJAVU_PDF_TEST) {
+		const w = BrowserWindow.getAllWindows()[0];
+		w.webContents.once("did-finish-load", async () => {
+			try {
+				const res = await w.webContents.executeJavaScript(`(async () => {
+          const c = document.createElement('canvas');
+          c.width = 1280; c.height = 720;
+          const g = c.getContext('2d');
+          const grad = g.createLinearGradient(0, 0, 1280, 720);
+          grad.addColorStop(0, '#2b8a3e'); grad.addColorStop(1, '#0b3d91');
+          g.fillStyle = grad; g.fillRect(0, 0, 1280, 720);
+          g.fillStyle = '#fff'; g.font = 'bold 110px sans-serif'; g.textAlign = 'center';
+          g.fillText('CAPTURE', 640, 330);
+          g.font = 'bold 64px sans-serif';
+          g.fillText('1280 x 720', 640, 430);
+          const url = c.toDataURL('image/png');
+          return await window.dejavuCard.exportPdf({ name: '촬영테스트', photo: url });
+        })()`);
+				console.log("TEST_PDF_OK", JSON.stringify(res));
+			} catch (err) {
+				console.error("TEST_PDF_FAIL", err);
+			}
+			app.quit();
+		});
+	}
 	app.on("activate", () => {
 		if (BrowserWindow.getAllWindows().length === 0) createWindow();
 	});

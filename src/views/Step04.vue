@@ -1,11 +1,14 @@
 <script setup>
 import { onMounted, onUnmounted, ref } from 'vue';
 import HeartLayout from '../components/HeartLayout.vue';
-import IdCard from '../components/IdCard.vue';
+import DejavuCard from '../components/DejavuCard.vue';
 import { flow, goTo } from '../store/flow.js';
 
 const phase = ref('issuing'); // 'issuing' | 'done'
+const saving = ref(false);
+const saved = ref(false);
 let timerId = null;
+let savedTimerId = null;
 
 onMounted(() => {
   timerId = setTimeout(() => {
@@ -16,12 +19,39 @@ onMounted(() => {
 
 onUnmounted(() => {
   if (timerId) clearTimeout(timerId);
+  if (savedTimerId) clearTimeout(savedTimerId);
 });
+
+async function savePdf() {
+  const api = window.dejavuCard;
+  if (!api) {
+    console.warn('PDF 저장은 앱(Electron)에서만 동작합니다.');
+    return;
+  }
+  if (saving.value) return;
+  saving.value = true;
+  try {
+    const result = await api.exportPdf({ name: flow.name, photo: flow.photo });
+    console.log('PDF 저장 완료:', result.filePath);
+    // 저장 다이얼로그가 없으니 버튼으로 결과를 알려준다
+    saved.value = true;
+    if (savedTimerId) clearTimeout(savedTimerId);
+    savedTimerId = setTimeout(() => {
+      saved.value = false;
+      savedTimerId = null;
+    }, 2000);
+  } catch (err) {
+    console.error('PDF 저장 실패:', err);
+  } finally {
+    saving.value = false;
+  }
+}
 
 function restart() {
   if (phase.value !== 'done') return;
   flow.pin = '';
   flow.name = '';
+  flow.photo = '';
   goTo(1);
 }
 </script>
@@ -29,12 +59,21 @@ function restart() {
 <template>
   <HeartLayout :show-frame="false" :show-strips="false" :show-id-card="false" :bg-opacity="0.3">
     <div class="big-card" :class="{ 'big-card--clickable': phase === 'done' }" @click="restart">
-      <IdCard :width-rem="36.1" />
+      <DejavuCard :width-rem="36.1" :photo="flow.photo" />
     </div>
     <p class="status">
       <template v-if="phase === 'issuing'">DEJAVU 카드가<br />발급 중입니다</template>
       <template v-else>DEJAVU 카드 발급이<br />완료 되었습니다!</template>
     </p>
+    <button
+      v-if="phase === 'done'"
+      class="pdf-btn"
+      type="button"
+      :disabled="saving"
+      @click="savePdf"
+    >
+      {{ saving ? '저장 중…' : saved ? '저장 완료' : '카드 PDF 저장' }}
+    </button>
   </HeartLayout>
 </template>
 
@@ -64,5 +103,26 @@ function restart() {
   letter-spacing: -0.24rem;
   line-height: 1.2;
   white-space: nowrap;
+}
+
+.pdf-btn {
+  position: absolute;
+  left: 50%;
+  bottom: 4rem;
+  transform: translateX(-50%);
+  padding: 1.6rem 4rem;
+  background: #fff;
+  border-radius: 8rem;
+  color: #ff393c;
+  font-family: 'Pretendard', -apple-system, sans-serif;
+  font-weight: 800;
+  font-size: 2.4rem;
+  letter-spacing: -0.05rem;
+  cursor: pointer;
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
 }
 </style>

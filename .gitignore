@@ -58,3 +58,6 @@ Thumbs.db
 *.mov
 *.wmv
 
+
+# 발급된 카드 PDF 출력물
+cards/

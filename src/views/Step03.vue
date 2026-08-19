@@ -1,7 +1,7 @@
 <script setup>
 import { onMounted, onBeforeUnmount, ref } from 'vue';
 import HeartLayout from '../components/HeartLayout.vue';
-import { next } from '../store/flow.js';
+import { flow, next } from '../store/flow.js';
 
 const phase = ref('preview'); // 'preview' | 'countdown' | 'confirm'
 const count = ref(3);
@@ -108,6 +108,7 @@ function retake() {
 }
 
 function use() {
+  flow.photo = capturedUrl.value;
   next();
 }
 

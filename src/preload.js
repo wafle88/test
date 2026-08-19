@@ -1,2 +1,10 @@
-// See the Electron documentation for details on how to use preload scripts:
-// https://www.electronjs.org/docs/latest/tutorial/process-model#preload-scripts
+const { contextBridge, ipcRenderer } = require('electron');
+
+contextBridge.exposeInMainWorld('dejavuCard', {
+  // 메인 창: 카드를 인쇄용 PDF 로 저장한다. { canceled, filePath } 를 돌려준다.
+  exportPdf: (payload) => ipcRenderer.invoke('card:export-pdf', payload),
+
+  // 인쇄용 숨김 창(?mode=print): 찍을 데이터를 받아오고, 렌더가 끝나면 알린다.
+  getPayload: () => ipcRenderer.invoke('card:print-payload'),
+  signalReady: () => ipcRenderer.send('card:print-ready'),
+});

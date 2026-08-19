@@ -4,6 +4,7 @@ export const flow = reactive({
   step: 1,
   pin: '',
   name: '',
+  photo: '',
 });
 
 export function goTo(step) {

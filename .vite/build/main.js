@@ -601,12 +601,12 @@ var createWindow = () => {
 		icon: devIconPath,
 		webPreferences: { preload: path.join(__dirname, "preload.js") }
 	});
-	mainWindow.loadURL("http://localhost:5174");
+	mainWindow.loadURL("http://localhost:5173");
 	mainWindow.webContents.openDevTools();
 };
 var CARD_PAGE_INCH = {
-	width: 53.98 / 25.4,
-	height: 85.6 / 25.4
+	width: 54 / 25.4,
+	height: 86 / 25.4
 };
 var PRINT_RENDER_TIMEOUT = 15e3;
 async function renderCardPdf(payload) {
@@ -625,7 +625,7 @@ async function renderCardPdf(payload) {
 				resolve();
 			});
 		});
-		await win.loadURL(`http://localhost:5174?mode=print`);
+		await win.loadURL(`http://localhost:5173?mode=print`);
 		await rendered;
 		return await win.webContents.printToPDF({
 			printBackground: true,
@@ -670,31 +670,6 @@ ipcMain.handle("card:export-pdf", async (event, payload) => {
 app.whenReady().then(() => {
 	if (process.platform === "darwin" && app.dock) app.dock.setIcon(devIconPath);
 	createWindow();
-	if (process.env.DEJAVU_PDF_TEST) {
-		const w = BrowserWindow.getAllWindows()[0];
-		w.webContents.once("did-finish-load", async () => {
-			try {
-				const res = await w.webContents.executeJavaScript(`(async () => {
-          const c = document.createElement('canvas');
-          c.width = 1280; c.height = 720;
-          const g = c.getContext('2d');
-          const grad = g.createLinearGradient(0, 0, 1280, 720);
-          grad.addColorStop(0, '#2b8a3e'); grad.addColorStop(1, '#0b3d91');
-          g.fillStyle = grad; g.fillRect(0, 0, 1280, 720);
-          g.fillStyle = '#fff'; g.font = 'bold 110px sans-serif'; g.textAlign = 'center';
-          g.fillText('CAPTURE', 640, 330);
-          g.font = 'bold 64px sans-serif';
-          g.fillText('1280 x 720', 640, 430);
-          const url = c.toDataURL('image/png');
-          return await window.dejavuCard.exportPdf({ name: '촬영테스트', photo: url });
-        })()`);
-				console.log("TEST_PDF_OK", JSON.stringify(res));
-			} catch (err) {
-				console.error("TEST_PDF_FAIL", err);
-			}
-			app.quit();
-		});
-	}
 	app.on("activate", () => {
 		if (BrowserWindow.getAllWindows().length === 0) createWindow();
 	});

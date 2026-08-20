@@ -3,9 +3,9 @@ import { nextTick, onMounted, ref } from 'vue';
 import DejavuCard from '../components/DejavuCard.vue';
 import { flow } from '../store/flow.js';
 
-// CR80 카드 규격 (53.98 x 85.6mm). @page 와 값을 맞춰야 한다.
-const CARD_W = '53.98mm';
-const CARD_H = '85.6mm';
+// 디자인팀 지정 카드 규격 (54 x 86mm). @page 와 값을 맞춰야 한다.
+const CARD_W = '54mm';
+const CARD_H = '86mm';
 
 const photo = ref('');
 
@@ -35,7 +35,7 @@ onMounted(async () => {
 <!-- 인쇄 전용 문서라 스코프 없이 페이지 자체를 카드 크기로 맞춘다 -->
 <style>
 @page {
-  size: 53.98mm 85.6mm;
+  size: 54mm 86mm;
   margin: 0;
 }
 
@@ -47,8 +47,8 @@ body {
 }
 
 #app {
-  width: 53.98mm;
-  height: 85.6mm;
+  width: 54mm;
+  height: 86mm;
   overflow: hidden;
 }
 </style>

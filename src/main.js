@@ -30,9 +30,9 @@ const createWindow = () => {
   mainWindow.webContents.openDevTools();
 };
 
-// CR80 카드 규격(53.98 x 85.6mm)을 인치로 환산.
+// 디자인팀 지정 카드 규격(54 x 86mm)을 인치로 환산.
 // PrintCard.vue 의 @page 규칙이 우선이고, 이 값은 규칙이 먹지 않았을 때의 안전망이다.
-const CARD_PAGE_INCH = { width: 53.98 / 25.4, height: 85.6 / 25.4 };
+const CARD_PAGE_INCH = { width: 54 / 25.4, height: 86 / 25.4 };
 const PRINT_RENDER_TIMEOUT = 15000;
 
 // 화면용 창은 vw 기반 rem 위에 올라가 있어 그대로 인쇄하면 크기가 어긋난다.

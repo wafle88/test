@@ -26,7 +26,8 @@
       "Bash(python3 *)",
       "Bash(git restore *)",
       "Bash(git remote *)",
-      "Bash(git push *)"
+      "Bash(git push *)",
+      "mcp__plugin_figma_figma__get_design_context"
     ]
   }
 }

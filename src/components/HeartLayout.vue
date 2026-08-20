@@ -6,13 +6,14 @@ import IdCard from './IdCard.vue';
 defineProps({
   showFrame: { type: Boolean, default: true },
   showStrips: { type: Boolean, default: true },
-  showIdCard: { type: Boolean, default: true },
+  showIdCard: { type: Boolean, default: false },
   bgOpacity: { type: Number, default: 1 },
+  theme: { type: String, default: 'red' }, // 'red' | 'white'
 });
 </script>
 
 <template>
-  <section class="heart-layout">
+  <section class="heart-layout" :class="`heart-layout--${theme}`">
     <img
       class="bg-pattern"
       :src="dejavuBg"
@@ -41,8 +42,15 @@ defineProps({
   position: relative;
   width: 192rem;
   height: 108rem;
-  background: #ff393c;
   overflow: hidden;
+
+  &--red {
+    background: #ff393c;
+  }
+
+  &--white {
+    background: #fff;
+  }
 }
 
 .bg-pattern {
@@ -75,7 +83,7 @@ defineProps({
   left: 50%;
   top: 50%;
   transform: translate(-50%, -50%);
-  width: 63.7rem;
+  width: 59.6rem;
   height: 82.8rem;
   background: #fff;
   border: 0.887rem solid #fff;

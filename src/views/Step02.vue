@@ -25,8 +25,8 @@ const displayName = computed(() => nameText.value || '권은비');
 
 const instruction = computed(() =>
   phase.value === 'pin'
-    ? '매장에서 발급받은 코드번호를 입력해주세요'
-    : '데자뷰 카드에 인쇄될 이름을 입력해주세요'
+    ? '매장에서 발급받은 코드 번호를 입력하세요'
+    : '카드에 인쇄할 이름을 입력하세요'
 );
 
 function submitPin() {
@@ -82,7 +82,7 @@ function submit() {
       </p>
     </div>
 
-    <button class="submit-btn" type="button" @click="submit">입력완료</button>
+    <button class="submit-btn" type="button" @click="submit">입력 완료</button>
 
     <div class="keyboard-wrap">
       <Keyboard @key="onKey" />
@@ -95,7 +95,7 @@ function submit() {
   position: relative;
   width: 192rem;
   height: 108rem;
-  background: #ff393c;
+  background: #fff;
   overflow: hidden;
 
   .instruction {
@@ -103,10 +103,11 @@ function submit() {
     left: 50%;
     top: 20rem;
     transform: translateX(-50%);
+    margin: 0;
     font-family: 'Pretendard', -apple-system, sans-serif;
     font-weight: 900;
     font-size: 3rem;
-    color: #fff;
+    color: #ff393c;
     letter-spacing: -0.12rem;
     line-height: 1;
     white-space: nowrap;
@@ -120,17 +121,20 @@ function submit() {
     width: 100rem;
     padding: 3rem 0;
     background: #fff;
+    border: 0.2rem solid #ff393c;
     border-radius: 13rem;
     display: flex;
     align-items: center;
     justify-content: center;
+    box-sizing: border-box;
   }
 
   .code-text {
+    margin: 0;
     font-family: 'Pretendard', -apple-system, sans-serif;
     font-weight: 800;
     font-size: 6rem;
-    color: #ff393c;
+    color: #000;
     letter-spacing: -0.24rem;
     line-height: 1;
     white-space: nowrap;
@@ -142,10 +146,10 @@ function submit() {
     top: 41.9rem;
     transform: translateX(-50%);
     padding: 4rem 6rem;
-    background: #fff;
+    background: #ff393c;
     border: none;
     border-radius: 8rem;
-    color: #ff393c;
+    color: #fff;
     font-family: 'Pretendard', -apple-system, sans-serif;
     font-weight: 800;
     font-size: 3.1rem;

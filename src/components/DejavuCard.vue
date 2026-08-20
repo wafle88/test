@@ -4,7 +4,6 @@ import { flow } from '../store/flow.js';
 import avatarPhoto from '../assets/images/card/avatar_photo.png';
 import handleSvg from '../assets/images/card/handle.svg';
 import noteSvg from '../assets/images/card/note.svg';
-import trackTitleSvg from '../assets/images/card/track_title.svg';
 import wordmarkSvg from '../assets/images/card/dejavu_wordmark.svg';
 import heartSvg from '../assets/images/card/heart.svg';
 
@@ -37,7 +36,7 @@ const style = computed(() => {
     </div>
     <img class="handle" :src="handleSvg" alt="silver_rain.__" />
     <img class="note" :src="noteSvg" alt="" />
-    <img class="track" :src="trackTitleSvg" alt="권은비 · DEJAVU" />
+    <p class="track">{{ displayName }} · DEJAVU</p>
 
     <div class="photo">
       <div class="photo__inner">
@@ -111,9 +110,11 @@ const style = computed(() => {
   position: absolute;
   left: 26.6667cqi;
   top: 13cqi;
-  width: 19.3333cqi;
-  height: 2.3333cqi;
-  display: block;
+  margin: 0;
+  font-size: 2cqi;
+  line-height: 1;
+  color: #231916;
+  white-space: nowrap;
   pointer-events: none;
 }
 

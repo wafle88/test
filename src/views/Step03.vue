@@ -126,7 +126,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <HeartLayout>
+  <HeartLayout theme="white" :bg-opacity="0.2">
     <template #frame>
       <div class="portrait-wrap">
         <video
@@ -145,38 +145,33 @@ onBeforeUnmount(() => {
         />
       </div>
 
-      <template v-if="phase === 'preview'">
-        <p class="instruction">
-          안내선에 따라 카메라를<br />바라봐주세요
-        </p>
-        <button class="start-btn" type="button" @click="startCountdown">촬영 시작하기</button>
-      </template>
+      <p v-if="phase === 'preview'" class="instruction">카메라를 바라 보세요</p>
 
       <p v-else-if="phase === 'countdown'" class="count">{{ count }}</p>
 
-      <template v-else-if="phase === 'confirm'">
-        <p class="completion">촬영이<br />완료되었습니다</p>
-        <div class="btn-container">
-          <button class="btn" type="button" @click="retake">재촬영</button>
-          <button class="btn" type="button" @click="use">사용하기</button>
-        </div>
-      </template>
+      <p v-else-if="phase === 'confirm'" class="completion">촬영을 완료했어요</p>
 
       <div class="shutter-flash" :class="{ 'shutter-flash--on': flash }"></div>
     </template>
+
+    <button
+      v-if="phase === 'preview'"
+      class="start-btn"
+      type="button"
+      @click="startCountdown"
+    >촬영 시작</button>
+
+    <div v-if="phase === 'confirm'" class="btn-container">
+      <button class="btn btn--secondary" type="button" @click="retake">재촬영</button>
+      <button class="btn btn--primary" type="button" @click="use">그대로 사용</button>
+    </div>
   </HeartLayout>
 </template>
 
 <style scoped lang="scss">
 .portrait-wrap {
   position: absolute;
-  //left: -40.9r/em;
-  //top: -29.7rem;
-  //width: 140.957rem;
-  width:auto;
-  height: 82.8rem;
-  //border: 5.877rem solid #fff;
-  box-sizing: border-box;
+  inset: 0;
   overflow: hidden;
   pointer-events: none;
 }
@@ -197,8 +192,9 @@ onBeforeUnmount(() => {
 .instruction {
   position: absolute;
   left: 50%;
-  top: calc(50% - 7.2rem);
+  top: calc(50% + 12.8rem);
   transform: translateX(-50%);
+  margin: 0;
   font-family: 'Pretendard', -apple-system, sans-serif;
   font-weight: 900;
   font-size: 6rem;
@@ -207,33 +203,13 @@ onBeforeUnmount(() => {
   letter-spacing: -0.24rem;
   line-height: 1.2;
   white-space: nowrap;
-  margin: 0;
-  text-shadow: 0 0.2rem 1.2rem rgba(0, 0, 0, 0.15);
-}
-
-.start-btn {
-  position: absolute;
-  left: 50%;
-  top: 67rem;
-  transform: translateX(-50%);
-  padding: 4rem 6rem;
-  background: #ff393c;
-  border: 0.2rem solid #000;
-  border-radius: 8rem;
-  color: #fff;
-  font-family: 'Pretendard', -apple-system, sans-serif;
-  font-weight: 800;
-  font-size: 3.1rem;
-  letter-spacing: -0.124rem;
-  line-height: 1;
-  cursor: pointer;
-  white-space: nowrap;
+  text-shadow: 0 0.2rem 1.2rem rgba(0, 0, 0, 0.4);
 }
 
 .count {
   position: absolute;
   left: 50%;
-  top: 63.7rem;
+  top: calc(50% + 12rem);
   transform: translateX(-50%);
   margin: 0;
   font-family: 'Pretendard', -apple-system, sans-serif;
@@ -241,15 +217,15 @@ onBeforeUnmount(() => {
   font-size: 20rem;
   color: #fff;
   letter-spacing: -0.8rem;
-  line-height: 1.2;
+  line-height: 1;
   text-align: center;
-  text-shadow: 0 0.4rem 2rem rgba(0, 0, 0, 0.25);
+  text-shadow: 0 0.4rem 2rem rgba(0, 0, 0, 0.35);
 }
 
 .completion {
   position: absolute;
   left: 50%;
-  top: 49.9rem;
+  top: calc(50% + 12.8rem);
   transform: translateX(-50%);
   margin: 0;
   font-family: 'Pretendard', -apple-system, sans-serif;
@@ -260,24 +236,19 @@ onBeforeUnmount(() => {
   letter-spacing: -0.24rem;
   line-height: 1.2;
   white-space: nowrap;
-  text-shadow: 0 0.2rem 1.2rem rgba(0, 0, 0, 0.2);
+  text-shadow: 0 0.2rem 1.2rem rgba(0, 0, 0, 0.4);
 }
 
-.btn-container {
+.start-btn {
   position: absolute;
-  left: 10.3rem;
-  top: 67.1rem;
-  display: flex;
-  gap: 1rem;
-  align-items: center;
-}
-
-.btn {
+  left: 50%;
+  top: 79.7rem;
+  transform: translateX(-50%);
   padding: 4rem 6rem;
-  background: #fff;
+  background: #ff393c;
   border: none;
   border-radius: 8rem;
-  color: #ff393c;
+  color: #fff;
   font-family: 'Pretendard', -apple-system, sans-serif;
   font-weight: 800;
   font-size: 3.1rem;
@@ -285,6 +256,41 @@ onBeforeUnmount(() => {
   line-height: 1;
   cursor: pointer;
   white-space: nowrap;
+  z-index: 5;
+}
+
+.btn-container {
+  position: absolute;
+  left: 50%;
+  top: 79.7rem;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  z-index: 5;
+}
+
+.btn {
+  padding: 4rem 6rem;
+  border: none;
+  border-radius: 8rem;
+  font-family: 'Pretendard', -apple-system, sans-serif;
+  font-weight: 800;
+  font-size: 3.1rem;
+  letter-spacing: -0.124rem;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+
+  &--primary {
+    background: #ff393c;
+    color: #fff;
+  }
+
+  &--secondary {
+    background: #fff;
+    color: #ff393c;
+  }
 }
 
 .shutter-flash {

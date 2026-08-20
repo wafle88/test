@@ -33,7 +33,6 @@ async function savePdf() {
   try {
     const result = await api.exportPdf({ name: flow.name, photo: flow.photo });
     console.log('PDF 저장 완료:', result.filePath);
-    // 저장 다이얼로그가 없으니 버튼으로 결과를 알려준다
     saved.value = true;
     if (savedTimerId) clearTimeout(savedTimerId);
     savedTimerId = setTimeout(() => {
@@ -57,20 +56,26 @@ function restart() {
 </script>
 
 <template>
-  <HeartLayout :show-frame="false" :show-strips="false" :show-id-card="false" :bg-opacity="0.3">
-    <div class="big-card" :class="{ 'big-card--clickable': phase === 'done' }" @click="restart">
+  <HeartLayout
+    theme="red"
+    :show-frame="false"
+    :show-strips="false"
+    :show-id-card="false"
+    :bg-opacity="0.3"
+  >
+    <div class="card-wrap" :class="{ 'card-wrap--clickable': phase === 'done' }" @click="restart">
       <DejavuCard :width-rem="36.1" :photo="flow.photo" />
     </div>
     <p class="status">
-      <template v-if="phase === 'issuing'">DEJAVU 카드가<br />발급 중입니다</template>
-      <template v-else>DEJAVU 카드 발급이<br />완료 되었습니다!</template>
+      <template v-if="phase === 'issuing'">DEJAVU 카드를<br />발급하고 있어요</template>
+      <template v-else>DEJAVU 카드 발급을<br />완료했어요!</template>
     </p>
     <button
       v-if="phase === 'done'"
       class="pdf-btn"
       type="button"
       :disabled="saving"
-      @click="savePdf"
+      @click.stop="savePdf"
     >
       {{ saving ? '저장 중…' : saved ? '저장 완료' : '카드 PDF 저장' }}
     </button>
@@ -78,7 +83,7 @@ function restart() {
 </template>
 
 <style scoped lang="scss">
-.big-card {
+.card-wrap {
   position: absolute;
   left: 50%;
   top: calc(50% - 10.6rem);
@@ -112,6 +117,7 @@ function restart() {
   transform: translateX(-50%);
   padding: 1.6rem 4rem;
   background: #fff;
+  border: none;
   border-radius: 8rem;
   color: #ff393c;
   font-family: 'Pretendard', -apple-system, sans-serif;

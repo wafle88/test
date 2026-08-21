@@ -13,6 +13,8 @@ const props = defineProps({
   width: { type: String, default: '' },
   height: { type: String, default: '' },
   photo: { type: String, default: '' },
+  // 인쇄 PDF 용. 사진과 이름만 남기고 나머지 장식을 숨긴다.
+  printOnly: { type: Boolean, default: false },
 });
 
 const displayName = computed(() => flow.name || '권은비');
@@ -25,29 +27,35 @@ const style = computed(() => {
     // 높이를 직접 주면 aspect-ratio 대신 그 값을 따른다 (CR80 처럼 비율이 살짝 다른 규격용)
     ...(props.height ? { height: props.height, aspectRatio: 'auto' } : null),
     borderRadius: `calc(${w} / 15)`,
+    // 인쇄용: 카드 배경도 없애야 사진/이름만 종이에 찍힌다.
+    ...(props.printOnly ? { background: 'transparent' } : null),
   };
 });
 </script>
 
 <template>
   <div class="dejavu-card" :style="style">
-    <div class="avatar">
-      <img class="avatar__img" :src="avatarPhoto" alt="" />
-    </div>
-    <img class="handle" :src="handleSvg" alt="silver_rain.__" />
-    <img class="note" :src="noteSvg" alt="" />
-    <p class="track">{{ displayName }} · DEJAVU</p>
+    <template v-if="!printOnly">
+      <div class="avatar">
+        <img class="avatar__img" :src="avatarPhoto" alt="" />
+      </div>
+      <img class="handle" :src="handleSvg" alt="silver_rain.__" />
+      <img class="note" :src="noteSvg" alt="" />
+      <p class="track">{{ displayName }} · DEJAVU</p>
+    </template>
 
     <div class="photo">
       <div class="photo__inner">
         <img v-if="photo" class="photo__img" :src="photo" alt="" />
-        <p v-else class="photo__placeholder">이 곳에<br />사진이<br />들어가요</p>
+        <p v-else-if="!printOnly" class="photo__placeholder">이 곳에<br />사진이<br />들어가요</p>
       </div>
     </div>
 
     <p class="name">{{ displayName }}</p>
-    <img class="wordmark" :src="wordmarkSvg" alt="DEJAVU" />
-    <img class="heart" :src="heartSvg" alt="" />
+    <template v-if="!printOnly">
+      <img class="wordmark" :src="wordmarkSvg" alt="DEJAVU" />
+      <img class="heart" :src="heartSvg" alt="" />
+    </template>
   </div>
 </template>
 

@@ -29,7 +29,7 @@ onMounted(async () => {
 </script>
 
 <template>
-  <DejavuCard :width="CARD_W" :height="CARD_H" :photo="photo" />
+  <DejavuCard :width="CARD_W" :height="CARD_H" :photo="photo" print-only />
 </template>
 
 <!-- 인쇄 전용 문서라 스코프 없이 페이지 자체를 카드 크기로 맞춘다 -->

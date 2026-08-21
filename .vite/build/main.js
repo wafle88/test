@@ -557,13 +557,13 @@ var require_src = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 //#region node_modules/electron-squirrel-startup/index.js
 var require_electron_squirrel_startup = /* @__PURE__ */ __commonJSMin(((exports, module) => {
 	var path$1 = require("path");
-	var spawn = require("child_process").spawn;
+	var spawn$1 = require("child_process").spawn;
 	var debug = require_src()("electron-squirrel-startup");
 	var app$1 = require("electron").app;
 	var run = function(args, done) {
 		var updateExe = path$1.resolve(path$1.dirname(process.execPath), "..", "Update.exe");
 		debug("Spawning `%s` with args `%s`", updateExe, args);
-		spawn(updateExe, args, { detached: true }).on("close", done);
+		spawn$1(updateExe, args, { detached: true }).on("close", done);
 	};
 	var check = function() {
 		if (process.platform === "win32") {
@@ -592,7 +592,15 @@ var require_electron_squirrel_startup = /* @__PURE__ */ __commonJSMin(((exports,
 var { app, BrowserWindow, ipcMain, dialog } = require("electron");
 var path = require("node:path");
 var fs = require("node:fs/promises");
+var { spawn } = require("node:child_process");
+require("node:os");
 if (require_electron_squirrel_startup()) app.quit();
+app.commandLine.appendSwitch("force-color-profile", "srgb");
+var CARD_PRINTER_NAME = "IDP_SMART_51_Printer_2";
+var CARD_COLOR_MODEL = "Premium";
+var CARD_RESIN_EXTRACTION = "NotUse";
+var CARD_SMART_MODE = "Standard";
+var CARD_DITHERING = "Halftone";
 var devIconPath = path.join(__dirname, "../../src/assets/icon.png");
 var createWindow = () => {
 	const mainWindow = new BrowserWindow({
@@ -609,7 +617,7 @@ var CARD_PAGE_INCH = {
 	height: 86 / 25.4
 };
 var PRINT_RENDER_TIMEOUT = 15e3;
-async function renderCardPdf(payload) {
+async function withPrintCardWindow(payload, action) {
 	const win = new BrowserWindow({
 		show: false,
 		width: 420,
@@ -627,20 +635,68 @@ async function renderCardPdf(payload) {
 		});
 		await win.loadURL(`http://localhost:5173?mode=print`);
 		await rendered;
-		return await win.webContents.printToPDF({
-			printBackground: true,
-			preferCSSPageSize: true,
-			pageSize: CARD_PAGE_INCH,
-			margins: {
-				top: 0,
-				bottom: 0,
-				left: 0,
-				right: 0
-			}
-		});
+		return await action(win);
 	} finally {
 		win.destroy();
 	}
+}
+function renderCardPdf(payload) {
+	return withPrintCardWindow(payload, (win) => win.webContents.printToPDF({
+		printBackground: true,
+		preferCSSPageSize: true,
+		pageSize: CARD_PAGE_INCH,
+		margins: {
+			top: 0,
+			bottom: 0,
+			left: 0,
+			right: 0
+		}
+	}));
+}
+function runLp(pdfBuffer) {
+	return new Promise((resolve, reject) => {
+		const child = spawn("/usr/bin/lp", [
+			"-d",
+			CARD_PRINTER_NAME,
+			"-o",
+			`ColorModel=${CARD_COLOR_MODEL}`,
+			"-o",
+			`SmartResinExtraction=${CARD_RESIN_EXTRACTION}`,
+			"-o",
+			`SmartMode=${CARD_SMART_MODE}`,
+			"-o",
+			`SmartDithering=${CARD_DITHERING}`,
+			"-t",
+			"dejavu-card"
+		]);
+		let stdout = "";
+		let stderr = "";
+		child.stdout.on("data", (d) => {
+			stdout += d.toString();
+		});
+		child.stderr.on("data", (d) => {
+			stderr += d.toString();
+		});
+		child.on("error", (err) => reject(/* @__PURE__ */ new Error(`lp 실행 실패: ${err.message}`)));
+		child.on("close", (code) => {
+			if (code === 0) {
+				console.log("[print] lp OK:", stdout.trim());
+				resolve();
+			} else reject(/* @__PURE__ */ new Error(`lp 종료 코드 ${code}${stderr.trim() ? `: ${stderr.trim()}` : ""}`));
+		});
+		child.stdin.on("error", (err) => reject(/* @__PURE__ */ new Error(`lp stdin 오류: ${err.message}`)));
+		child.stdin.end(pdfBuffer);
+	});
+}
+async function printCardToPrinter(payload) {
+	const pdf = await renderCardPdf(payload);
+	console.log(`[print] PDF ready, ${pdf.length} bytes → ${CARD_PRINTER_NAME} (${CARD_COLOR_MODEL})`);
+	await runLp(pdf);
+	return {
+		success: true,
+		printer: CARD_PRINTER_NAME,
+		colorModel: CARD_COLOR_MODEL
+	};
 }
 function cardOutputDir() {
 	return app.isPackaged ? path.join(app.getPath("documents"), "dejavu_cards") : path.join(__dirname, "../../cards");
@@ -664,6 +720,14 @@ ipcMain.handle("card:export-pdf", async (event, payload) => {
 		};
 	} catch (err) {
 		dialog.showErrorBox("카드 PDF 저장 실패", `${filePath}\n\n${err.message}`);
+		throw err;
+	}
+});
+ipcMain.handle("card:print", async (event, payload) => {
+	try {
+		return await printCardToPrinter(payload ?? {});
+	} catch (err) {
+		dialog.showErrorBox("카드 인쇄 실패", err.message);
 		throw err;
 	}
 });

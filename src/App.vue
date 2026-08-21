@@ -1,11 +1,14 @@
 <script setup>
+import { onMounted, ref } from 'vue';
 import { flow, goTo } from './store/flow.js';
 import Step01 from './views/Step01.vue';
 import Step02 from './views/Step02.vue';
 import Step03 from './views/Step03.vue';
 import Step04 from './views/Step04.vue';
 import stripPattern from './assets/images/strip_pattern.svg';
-import dejavuBg from './assets/images/dejavu_bg_pattern.svg';
+import stripPatternRed from './assets/images/strip_pattern_red.svg';
+import dejavuBg from './assets/images/dejavu_bg_pattern.png';
+import dejavuBgRed from './assets/images/dejavu_bg_pattern_red.png';
 import step01Bg from './assets/images/step01_bg.jpg';
 import portrait from './assets/images/portrait.png';
 import idCard from './assets/images/id_card.png';
@@ -13,7 +16,7 @@ import testProfileImg from './assets/images/test-profile.png';
 import testSportsImg from './assets/images/test-sports.png';
 
 // 첫 진입 시 이미지 pop-in을 막기 위해 앱 부팅 시점에 프리로드
-[stripPattern, dejavuBg, step01Bg, portrait, idCard].forEach((src) => {
+[stripPattern, stripPatternRed, dejavuBg, dejavuBgRed, step01Bg, portrait, idCard].forEach((src) => {
   const img = new Image();
   img.src = src;
 });
@@ -44,6 +47,43 @@ async function urlToDataUrl(src) {
   });
 }
 
+// --- 개발용 코드 사용 기록 확인 패널 ---
+const isDev = ref(false);
+const showUsedCodes = ref(false);
+const usedCodes = ref([]);
+
+onMounted(async () => {
+  isDev.value = (await window.dejavuCard?.isDev?.()) === true;
+});
+
+function formatCode(code) {
+  return code.length === 8 ? `${code.slice(0, 4)}-${code.slice(4)}` : code;
+}
+
+async function toggleUsedCodes() {
+  showUsedCodes.value = !showUsedCodes.value;
+  if (showUsedCodes.value) await loadUsedCodes();
+}
+
+async function loadUsedCodes() {
+  const list = await window.dejavuCard?.listUsedCodes?.();
+  usedCodes.value = Array.isArray(list) ? list : [];
+}
+
+async function revealUsedCodes() {
+  const res = await window.dejavuCard?.revealUsedCodes?.();
+  if (!res?.ok) console.error('사용 기록 폴더 열기 실패:', res);
+}
+
+async function clearUsedCodes() {
+  const res = await window.dejavuCard?.clearUsedCodes?.();
+  if (!res?.ok) {
+    console.error('사용 기록 초기화 실패:', res?.error);
+    return;
+  }
+  await loadUsedCodes();
+}
+
 async function runTestPrint(preset) {
   flow.name = preset.name;
   flow.photo = await urlToDataUrl(preset.src);
@@ -72,7 +112,29 @@ async function runTestPrint(preset) {
       >
         {{ preset.label }}
       </button>
+      <button
+        v-if="isDev"
+        class="dev-nav__test"
+        :class="{ active: showUsedCodes }"
+        type="button"
+        @click="toggleUsedCodes"
+      >
+        CODE
+      </button>
     </nav>
+
+    <div v-if="isDev && showUsedCodes" class="dev-codes">
+      <div class="dev-codes__head">
+        <span>사용된 코드 {{ usedCodes.length }}개</span>
+        <button type="button" @click="loadUsedCodes">새로고침</button>
+        <button type="button" @click="revealUsedCodes">폴더</button>
+        <button type="button" @click="clearUsedCodes">초기화</button>
+      </div>
+      <ul v-if="usedCodes.length" class="dev-codes__list">
+        <li v-for="code in usedCodes" :key="code">{{ formatCode(code) }}</li>
+      </ul>
+      <p v-else class="dev-codes__empty">아직 사용된 코드가 없습니다.</p>
+    </div>
   </div>
 </template>
 
@@ -115,6 +177,56 @@ async function runTestPrint(preset) {
     padding: 0 8px;
     margin-left: 6px;
     letter-spacing: 0.5px;
+  }
+}
+
+.dev-codes {
+  position: fixed;
+  right: 12px;
+  bottom: 52px;
+  width: 240px;
+  max-height: 320px;
+  overflow-y: auto;
+  padding: 8px;
+  background: rgba(0, 0, 0, 0.8);
+  border-radius: 6px;
+  color: #fff;
+  font-size: 12px;
+  line-height: 1.6;
+  z-index: 9999;
+
+  &__head {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-bottom: 6px;
+
+    span {
+      flex: 1;
+      font-size: 11px;
+      opacity: 0.8;
+    }
+
+    button {
+      padding: 2px 6px;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      background: transparent;
+      color: #fff;
+      font-size: 10px;
+      cursor: pointer;
+    }
+  }
+
+  &__list {
+    margin: 0;
+    padding: 0;
+    list-style: none;
+    font-variant-numeric: tabular-nums;
+  }
+
+  &__empty {
+    margin: 0;
+    opacity: 0.6;
   }
 }
 </style>

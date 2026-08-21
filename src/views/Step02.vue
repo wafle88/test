@@ -3,11 +3,31 @@ import { computed, ref } from 'vue';
 import Keyboard from '../components/Keyboard.vue';
 import { flow, next } from '../store/flow.js';
 import { HangulComposer } from '../utils/hangul.js';
+import issuedCodes from '../data/codes.json';
+
+// 매장에서 발급한 코드 목록. 조회만 하므로 Set 으로 한 번만 만들어 둔다.
+const CODE_SET = new Set(issuedCodes);
+
+// 이미 카드가 나간 코드는 메인 프로세스가 파일로 들고 있다. 화면 진입 시 한 번만 읽어온다.
+let usedCodes = new Set();
+const usedCodesReady = (async () => {
+  try {
+    const list = await window.dejavuCard?.listUsedCodes?.();
+    if (Array.isArray(list)) usedCodes = new Set(list);
+  } catch (err) {
+    // 목록을 못 읽으면 재사용 차단만 빠지고 코드 검증 자체는 계속 동작한다.
+    console.warn('사용된 코드 목록을 불러오지 못했습니다:', err);
+  }
+})();
 
 const phase = ref('pin'); // 'pin' | 'name'
 
+// 입력 전에는 실제 값처럼 보이면 안 되므로 placeholder 로 흐리게 보여준다.
+const PIN_PLACEHOLDER = '0000-0000';
+const NAME_PLACEHOLDER = '이름을 입력해주세요';
+
 const displayPin = computed(() => {
-  if (!flow.pin) return '7812-3424';
+  if (!flow.pin) return PIN_PLACEHOLDER;
   const digits = flow.pin.replace(/[^0-9]/g, '').slice(0, 8);
   return digits.length > 4 ? `${digits.slice(0, 4)}-${digits.slice(4)}` : digits;
 });
@@ -21,7 +41,13 @@ function syncName() {
   flow.name = composer.text;
 }
 
-const displayName = computed(() => nameText.value || '권은비');
+const displayName = computed(() => nameText.value || NAME_PLACEHOLDER);
+
+const isPlaceholder = computed(() =>
+  phase.value === 'pin' ? !flow.pin : !nameText.value
+);
+
+const formError = ref('');
 
 const instruction = computed(() =>
   phase.value === 'pin'
@@ -29,13 +55,33 @@ const instruction = computed(() =>
     : '카드에 인쇄할 이름을 입력하세요'
 );
 
-function submitPin() {
+async function submitPin() {
+  const digits = flow.pin.replace(/[^0-9]/g, '');
+  if (digits.length < 8) {
+    formError.value = '코드 번호 8자리를 모두 입력해주세요';
+    return;
+  }
+  if (!CODE_SET.has(digits)) {
+    formError.value = '등록되지 않은 코드 번호예요. 다시 확인해주세요';
+    return;
+  }
+  await usedCodesReady;
+  if (usedCodes.has(digits)) {
+    formError.value = '이미 사용된 코드 번호예요';
+    return;
+  }
+  formError.value = '';
   phase.value = 'name';
 }
 
 function submitName() {
   composer.commit();
   syncName();
+  if (!nameText.value.trim()) {
+    formError.value = '이름을 입력해주세요';
+    return;
+  }
+  formError.value = '';
   next();
 }
 
@@ -43,10 +89,12 @@ function onKey(k) {
   if (phase.value === 'pin') {
     if (k === 'BACKSPACE') {
       flow.pin = flow.pin.slice(0, -1);
+      formError.value = '';
     } else if (k === 'ENTER') {
       submitPin();
     } else if (/^[0-9]$/.test(k)) {
       if (flow.pin.length < 8) flow.pin += k;
+      formError.value = '';
     }
     return;
   }
@@ -62,6 +110,7 @@ function onKey(k) {
     if (composer.text.length >= 12) return;
     composer.input(k);
   }
+  formError.value = '';
   syncName();
 }
 
@@ -76,13 +125,15 @@ function submit() {
     <p class="instruction">{{ instruction }}</p>
 
     <div class="code-container">
-      <p class="code-text">
+      <p class="code-text" :class="{ 'code-text--placeholder': isPlaceholder }">
         <template v-if="phase === 'pin'">{{ displayPin }}</template>
         <template v-else>{{ displayName }}</template>
       </p>
     </div>
 
     <button class="submit-btn" type="button" @click="submit">입력 완료</button>
+
+    <p v-if="formError" class="input-error">{{ formError }}</p>
 
     <div class="keyboard-wrap">
       <Keyboard @key="onKey" />
@@ -138,6 +189,10 @@ function submit() {
     letter-spacing: -0.24rem;
     line-height: 1;
     white-space: nowrap;
+
+    &--placeholder {
+      color: rgba(0, 0, 0, 0.2);
+    }
   }
 
   .submit-btn {
@@ -156,6 +211,21 @@ function submit() {
     letter-spacing: -0.124rem;
     line-height: 1;
     cursor: pointer;
+  }
+
+  .input-error {
+    position: absolute;
+    left: 50%;
+    top: 55rem;
+    transform: translateX(-50%);
+    margin: 0;
+    font-family: 'Pretendard', -apple-system, sans-serif;
+    font-weight: 800;
+    font-size: 2.6rem;
+    color: #ff393c;
+    letter-spacing: -0.104rem;
+    line-height: 1;
+    white-space: nowrap;
   }
 
   .keyboard-wrap {

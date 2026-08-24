@@ -61,3 +61,6 @@ Thumbs.db
 
 # 발급된 카드 PDF 출력물
 cards/
+
+# 개발 중 사용된 코드 번호 기록 (런타임 상태)
+data/used-codes.json

@@ -589,7 +589,7 @@ var require_electron_squirrel_startup = /* @__PURE__ */ __commonJSMin(((exports,
 }));
 //#endregion
 //#region src/main.js
-var { app, BrowserWindow, ipcMain, dialog } = require("electron");
+var { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
 var path = require("node:path");
 var fs = require("node:fs/promises");
 var { spawn } = require("node:child_process");
@@ -708,6 +708,93 @@ function pdfFileName(name) {
 	const stamp = `${d.getFullYear()}${pad(d.getMonth() + 1)}${pad(d.getDate())}_${pad(d.getHours())}${pad(d.getMinutes())}${pad(d.getSeconds())}`;
 	return `dejavu_card_${safeName ? `${safeName}_` : ""}${stamp}.pdf`;
 }
+function usedCodesPath() {
+	return app.isPackaged ? path.join(app.getPath("userData"), "used-codes.json") : path.join(__dirname, "../../data/used-codes.json");
+}
+var usedCodesCache = null;
+async function readUsedCodes() {
+	if (usedCodesCache) return usedCodesCache;
+	try {
+		const parsed = JSON.parse(await fs.readFile(usedCodesPath(), "utf8"));
+		usedCodesCache = Array.isArray(parsed) ? parsed.filter((c) => typeof c === "string") : [];
+	} catch (err) {
+		if (err.code !== "ENOENT") console.warn("[codes] 사용 기록을 읽지 못해 빈 목록으로 시작합니다:", err.message);
+		usedCodesCache = [];
+	}
+	return usedCodesCache;
+}
+async function writeUsedCodes(list) {
+	const file = usedCodesPath();
+	const tmp = `${file}.tmp`;
+	await fs.mkdir(path.dirname(file), { recursive: true });
+	await fs.writeFile(tmp, JSON.stringify(list, null, 2));
+	await fs.rename(tmp, file);
+}
+async function ensureUsedCodesFile() {
+	const list = await readUsedCodes();
+	try {
+		await fs.access(usedCodesPath());
+	} catch {
+		await writeUsedCodes(list).catch((err) => {
+			console.error("[codes] 사용 기록 파일 생성 실패:", err.message);
+		});
+	}
+}
+ipcMain.handle("app:is-dev", () => !app.isPackaged);
+ipcMain.handle("codes:reveal-file", async () => {
+	await ensureUsedCodesFile();
+	shell.showItemInFolder(usedCodesPath());
+	return {
+		ok: true,
+		path: usedCodesPath()
+	};
+});
+ipcMain.handle("codes:list-used", () => readUsedCodes());
+ipcMain.handle("codes:clear-used", async () => {
+	if (app.isPackaged) return {
+		ok: false,
+		error: "패키징된 앱에서는 초기화할 수 없습니다."
+	};
+	usedCodesCache = [];
+	try {
+		await writeUsedCodes([]);
+	} catch (err) {
+		console.error("[codes] 사용 기록 초기화 실패:", err.message);
+		return {
+			ok: false,
+			error: err.message
+		};
+	}
+	return { ok: true };
+});
+ipcMain.handle("codes:mark-used", async (event, code) => {
+	const digits = String(code ?? "").replace(/[^0-9]/g, "");
+	if (digits.length !== 8) return {
+		ok: false,
+		error: "코드 번호 형식이 아닙니다."
+	};
+	const list = await readUsedCodes();
+	if (list.includes(digits)) return {
+		ok: true,
+		used: list.length
+	};
+	list.push(digits);
+	try {
+		await writeUsedCodes(list);
+		console.log(`[codes] 사용 처리: ${digits} (누적 ${list.length}개) → ${usedCodesPath()}`);
+	} catch (err) {
+		console.error("[codes] 사용 기록 저장 실패:", err.message);
+		return {
+			ok: false,
+			error: err.message,
+			used: list.length
+		};
+	}
+	return {
+		ok: true,
+		used: list.length
+	};
+});
 ipcMain.handle("card:export-pdf", async (event, payload) => {
 	const filePath = path.join(cardOutputDir(), pdfFileName(payload?.name));
 	try {
@@ -727,11 +814,14 @@ ipcMain.handle("card:print", async (event, payload) => {
 	try {
 		return await printCardToPrinter(payload ?? {});
 	} catch (err) {
-		dialog.showErrorBox("카드 인쇄 실패", err.message);
+		if (app.isPackaged) dialog.showErrorBox("카드 인쇄 실패", err.message);
+		else console.error("[print] 실패:", err.message);
 		throw err;
 	}
 });
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+	console.log("[codes] 사용 기록 파일:", usedCodesPath());
+	await ensureUsedCodesFile();
 	if (process.platform === "darwin" && app.dock) app.dock.setIcon(devIconPath);
 	createWindow();
 	app.on("activate", () => {

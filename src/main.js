@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const { spawn } = require('node:child_process');
@@ -169,6 +169,97 @@ function pdfFileName(name) {
   return `dejavu_card_${safeName ? `${safeName}_` : ''}${stamp}.pdf`;
 }
 
+// 발급에 사용된 코드 번호 기록. cards/ 와 같은 규칙을 따른다.
+// 개발 중에는 프로젝트 루트의 data/ 에 둬서 바로 열어볼 수 있게 하고,
+// 패키징된 앱은 코드가 asar(읽기 전용 + 무결성 검증) 안에 들어가 있어 그 안에 쓸 수 없으므로
+// userData 로 보낸다. 경로는 앱 시작 시 콘솔에 찍는다 — 운영 중 초기화할 때 쓴다.
+function usedCodesPath() {
+  return app.isPackaged
+    ? path.join(app.getPath('userData'), 'used-codes.json')
+    : path.join(__dirname, '../../data/used-codes.json');
+}
+
+let usedCodesCache = null;
+
+async function readUsedCodes() {
+  if (usedCodesCache) return usedCodesCache;
+  try {
+    const parsed = JSON.parse(await fs.readFile(usedCodesPath(), 'utf8'));
+    usedCodesCache = Array.isArray(parsed) ? parsed.filter((c) => typeof c === 'string') : [];
+  } catch (err) {
+    if (err.code !== 'ENOENT') {
+      console.warn('[codes] 사용 기록을 읽지 못해 빈 목록으로 시작합니다:', err.message);
+    }
+    usedCodesCache = [];
+  }
+  return usedCodesCache;
+}
+
+// 인쇄 직후 전원이 꺼져도 파일이 깨지지 않도록 임시 파일에 쓴 뒤 교체한다.
+async function writeUsedCodes(list) {
+  const file = usedCodesPath();
+  const tmp = `${file}.tmp`;
+  await fs.mkdir(path.dirname(file), { recursive: true });
+  await fs.writeFile(tmp, JSON.stringify(list, null, 2));
+  await fs.rename(tmp, file);
+}
+
+// 기록이 하나도 없으면 파일이 아예 안 생겨서 "동작하는지" 확인할 수가 없다.
+// 앱 시작 시 빈 목록으로라도 만들어 둔다.
+async function ensureUsedCodesFile() {
+  const list = await readUsedCodes();
+  try {
+    await fs.access(usedCodesPath());
+  } catch {
+    await writeUsedCodes(list).catch((err) => {
+      console.error('[codes] 사용 기록 파일 생성 실패:', err.message);
+    });
+  }
+}
+
+ipcMain.handle('app:is-dev', () => !app.isPackaged);
+
+// 운영자가 userData 경로를 몰라도 파일을 찾을 수 있게 OS 파일 탐색기로 열어준다.
+ipcMain.handle('codes:reveal-file', async () => {
+  await ensureUsedCodesFile();
+  shell.showItemInFolder(usedCodesPath());
+  return { ok: true, path: usedCodesPath() };
+});
+
+ipcMain.handle('codes:list-used', () => readUsedCodes());
+
+// 개발 중 반복 테스트용. 패키징된 앱에서는 실수로라도 지워지면 안 되므로 막는다.
+ipcMain.handle('codes:clear-used', async () => {
+  if (app.isPackaged) return { ok: false, error: '패키징된 앱에서는 초기화할 수 없습니다.' };
+  usedCodesCache = [];
+  try {
+    await writeUsedCodes([]);
+  } catch (err) {
+    console.error('[codes] 사용 기록 초기화 실패:', err.message);
+    return { ok: false, error: err.message };
+  }
+  return { ok: true };
+});
+
+ipcMain.handle('codes:mark-used', async (event, code) => {
+  const digits = String(code ?? '').replace(/[^0-9]/g, '');
+  if (digits.length !== 8) return { ok: false, error: '코드 번호 형식이 아닙니다.' };
+
+  const list = await readUsedCodes();
+  if (list.includes(digits)) return { ok: true, used: list.length };
+
+  list.push(digits);
+  try {
+    await writeUsedCodes(list);
+    console.log(`[codes] 사용 처리: ${digits} (누적 ${list.length}개) → ${usedCodesPath()}`);
+  } catch (err) {
+    // 캐시에는 남아 있어서 이번 세션 동안은 막히지만, 재시작하면 풀린다.
+    console.error('[codes] 사용 기록 저장 실패:', err.message);
+    return { ok: false, error: err.message, used: list.length };
+  }
+  return { ok: true, used: list.length };
+});
+
 ipcMain.handle('card:export-pdf', async (event, payload) => {
   const filePath = path.join(cardOutputDir(), pdfFileName(payload?.name));
 
@@ -188,12 +279,20 @@ ipcMain.handle('card:print', async (event, payload) => {
   try {
     return await printCardToPrinter(payload ?? {});
   } catch (err) {
-    dialog.showErrorBox('카드 인쇄 실패', err.message);
+    // 무인 운영 중에는 조용히 실패하면 안 되지만, 개발 중에는 모달이 뜨면
+    // 프린터 없이 흐름을 테스트할 수가 없어서 로그로만 남긴다.
+    if (app.isPackaged) {
+      dialog.showErrorBox('카드 인쇄 실패', err.message);
+    } else {
+      console.error('[print] 실패:', err.message);
+    }
     throw err;
   }
 });
 
-app.whenReady().then(() => {
+app.whenReady().then(async () => {
+  console.log('[codes] 사용 기록 파일:', usedCodesPath());
+  await ensureUsedCodesFile();
   if (process.platform === 'darwin' && app.dock) {
     app.dock.setIcon(devIconPath);
   }

@@ -109,6 +109,19 @@ function maskPhotoToCardShape(dataUrl) {
   });
 }
 
+// 인쇄가 실제로 성공했을 때만 코드를 소진 처리한다.
+// (프린터 오류로 실패했는데 코드가 타버리면 손님이 다시 시도할 수 없다)
+async function markPinUsed() {
+  const api = window.dejavuCard;
+  if (!api?.markCodeUsed || !flow.pin) return;
+  try {
+    const res = await api.markCodeUsed(flow.pin);
+    if (!res?.ok) console.error('코드 사용 기록 실패:', res?.error);
+  } catch (err) {
+    console.error('코드 사용 기록 실패:', err);
+  }
+}
+
 onMounted(async () => {
   if (flow.photo) {
     try {
@@ -135,9 +148,13 @@ onMounted(async () => {
   }
   try {
     await api.print({ name: flow.name, photo: flow.photo });
+    await markPinUsed();
   } catch (err) {
     console.error('카드 인쇄 실패:', err);
     printError.value = err?.message || '카드 인쇄에 실패했습니다.';
+    // 개발 중에는 프린터가 없어도 코드 소진까지 확인할 수 있어야 해서 실패해도 기록한다.
+    // 운영(패키징)에서는 인쇄 성공 시에만 소진된다.
+    if (await api.isDev?.()) await markPinUsed();
   } finally {
     printDone = true;
     maybeFinish();

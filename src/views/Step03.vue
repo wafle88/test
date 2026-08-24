@@ -126,7 +126,7 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <HeartLayout theme="white" :bg-opacity="0.2">
+  <HeartLayout theme="white">
     <template #frame>
       <div class="portrait-wrap">
         <video
@@ -202,6 +202,8 @@ onBeforeUnmount(() => {
   text-align: center;
   letter-spacing: -0.24rem;
   line-height: 1.2;
+  text-box-trim: trim-both;
+  text-box-edge: cap alphabetic;
   white-space: nowrap;
   text-shadow: 0 0.2rem 1.2rem rgba(0, 0, 0, 0.4);
 }
@@ -209,7 +211,9 @@ onBeforeUnmount(() => {
 .count {
   position: absolute;
   left: 50%;
-  top: calc(50% + 12rem);
+  // 피그마(step05)는 캡 높이~베이스라인으로 트리밍된 박스를 기준으로 좌표를 잡는다.
+  // text-box-trim 을 쓰면 폰트 메트릭 보정 없이 피그마 좌표(+223px)를 그대로 쓸 수 있다.
+  top: calc(50% + 22.3rem);
   transform: translateX(-50%);
   margin: 0;
   font-family: 'Pretendard', -apple-system, sans-serif;
@@ -217,7 +221,9 @@ onBeforeUnmount(() => {
   font-size: 20rem;
   color: #fff;
   letter-spacing: -0.8rem;
-  line-height: 1;
+  line-height: 1.2;
+  text-box-trim: trim-both;
+  text-box-edge: cap alphabetic;
   text-align: center;
   text-shadow: 0 0.4rem 2rem rgba(0, 0, 0, 0.35);
 }
@@ -235,6 +241,8 @@ onBeforeUnmount(() => {
   text-align: center;
   letter-spacing: -0.24rem;
   line-height: 1.2;
+  text-box-trim: trim-both;
+  text-box-edge: cap alphabetic;
   white-space: nowrap;
   text-shadow: 0 0.2rem 1.2rem rgba(0, 0, 0, 0.4);
 }

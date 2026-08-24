@@ -132,8 +132,8 @@ const style = computed(() => {
   top: 20cqi;
   width: 80cqi;
   height: 111cqi;
-  border-radius: 5.3333cqi;
-  background: #fff;
+  //border-radius: 5.3333cqi;
+  //background: #fff;
 
   &__inner {
     position: absolute;

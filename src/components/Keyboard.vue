@@ -6,6 +6,9 @@ const emit = defineEmits(['key']);
 
 const lang = ref('ko');
 const caps = ref(false);
+// 한 번 눌러 다음 키 한 개에만 shift 를 적용하는 one-shot 방식.
+// 화면상 SHIFT 를 다시 누르면 취소, 문자 키를 누르면 자동 해제.
+const shift = ref(false);
 
 const row1 = ['~', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '+'];
 
@@ -24,6 +27,12 @@ const rowMap = {
   },
 };
 
+// 표준 두벌식 배열의 shift 매핑. 나머지 자모는 shift 변형이 없다.
+const KO_SHIFT_MAP = {
+  ㅂ: 'ㅃ', ㅈ: 'ㅉ', ㄷ: 'ㄸ', ㄱ: 'ㄲ', ㅅ: 'ㅆ',
+  ㅐ: 'ㅒ', ㅔ: 'ㅖ',
+};
+
 const row2Trailing = computed(() => (lang.value === 'ko' ? '₩' : '\\'));
 
 const row2 = computed(() => transformRow(rowMap.row2[lang.value]));
@@ -31,9 +40,12 @@ const row3 = computed(() => transformRow(rowMap.row3[lang.value]));
 const row4 = computed(() => transformRow(rowMap.row4[lang.value]));
 
 function transformRow(row) {
-  if (lang.value === 'en' && caps.value) {
-    return row.map((c) => (/[a-z]/.test(c) ? c.toUpperCase() : c));
+  if (lang.value === 'ko') {
+    return shift.value ? row.map((c) => KO_SHIFT_MAP[c] || c) : row;
   }
+  // EN: caps 와 shift 의 XOR — 표준 하드웨어 키보드 관례.
+  const upper = caps.value !== shift.value;
+  if (upper) return row.map((c) => (/[a-z]/.test(c) ? c.toUpperCase() : c));
   return row;
 }
 
@@ -41,6 +53,7 @@ function press(value) {
   if (value === 'LANG') {
     lang.value = lang.value === 'ko' ? 'en' : 'ko';
     caps.value = false;
+    shift.value = false;
     emit('key', 'LANG');
     return;
   }
@@ -49,7 +62,14 @@ function press(value) {
     emit('key', 'CAPS');
     return;
   }
+  if (value === 'SHIFT') {
+    shift.value = !shift.value;
+    emit('key', 'SHIFT');
+    return;
+  }
   emit('key', value);
+  // 문자·기능 키 어떤 것이든 shift 를 소모해 다음 입력엔 영향 없게 한다.
+  if (shift.value) shift.value = false;
 }
 </script>
 
@@ -77,9 +97,17 @@ function press(value) {
         <button class="key key--fn key--enter" @click="press('ENTER')">ENTER</button>
       </div>
       <div class="row">
-        <button class="key key--fn key--shift" @click="press('SHIFT')">SHIFT</button>
+        <button
+          class="key key--fn key--shift"
+          :class="{ 'key--active': shift }"
+          @click="press('SHIFT')"
+        >SHIFT</button>
         <button v-for="c in row4" :key="c" class="key" @click="press(c)">{{ c }}</button>
-        <button class="key key--fn key--shift" @click="press('SHIFT')">SHIFT</button>
+        <button
+          class="key key--fn key--shift"
+          :class="{ 'key--active': shift }"
+          @click="press('SHIFT')"
+        >SHIFT</button>
       </div>
       <div class="row row--last">
         <button class="key key--space" @click="press(' ')"></button>

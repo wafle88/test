@@ -3,18 +3,24 @@ import { onMounted, onUnmounted, ref } from 'vue';
 import HeartLayout from '../components/HeartLayout.vue';
 import DejavuCard from '../components/DejavuCard.vue';
 import { flow, goTo } from '../store/flow.js';
+import { MASTER_CODE } from '../utils/masterCode.js';
 
 const phase = ref('issuing'); // 'issuing' | 'done'
 const printError = ref('');
 let timerId = null;
+let restartTimerId = null;
 // '발급중' 최소 표시 시간과 실제 인쇄 완료 중 늦은 쪽에 맞춰 done 으로 전환한다.
 let minWaitDone = false;
 let printDone = false;
+// 완료 화면을 보여준 뒤 처음 화면으로 되돌아가기까지의 시간.
+const AUTO_RESTART_MS = 3000;
 
 function maybeFinish() {
-  if (minWaitDone && printDone) {
-    phase.value = 'done';
-  }
+  if (!minWaitDone || !printDone) return;
+  if (phase.value === 'done') return;
+  phase.value = 'done';
+  // 손님이 카드를 누르지 않아도 다음 손님을 위해 처음 화면으로 돌아간다.
+  restartTimerId = setTimeout(restart, AUTO_RESTART_MS);
 }
 
 // DejavuCard 의 .photo 규격 (300x478 카드 단위). 인쇄 시에도 이 비율/라운드를 그대로 써야 한다.
@@ -114,6 +120,8 @@ function maskPhotoToCardShape(dataUrl) {
 async function markPinUsed() {
   const api = window.dejavuCard;
   if (!api?.markCodeUsed || !flow.pin) return;
+  // 만능키는 몇 번을 발급하든 소진되지 않는다.
+  if (flow.pin.replace(/[^0-9]/g, '') === MASTER_CODE) return;
   try {
     const res = await api.markCodeUsed(flow.pin);
     if (!res?.ok) console.error('코드 사용 기록 실패:', res?.error);
@@ -131,12 +139,12 @@ onMounted(async () => {
     }
   }
 
-  // '발급하고 있어요' 문구를 최소 3초는 보여준다.
+  // '발급하고 있어요' 문구를 최소 6초는 보여준다.
   timerId = setTimeout(() => {
     minWaitDone = true;
     timerId = null;
     maybeFinish();
-  }, 3000);
+  }, 6000);
 
   // 마스킹된 사진 기준으로 실제 인쇄를 걸고, 완료되면 done 전환 조건을 충족시킨다.
   const api = window.dejavuCard;
@@ -163,10 +171,16 @@ onMounted(async () => {
 
 onUnmounted(() => {
   if (timerId) clearTimeout(timerId);
+  if (restartTimerId) clearTimeout(restartTimerId);
 });
 
 function restart() {
   if (phase.value !== 'done') return;
+  // 자동 복귀 타이머보다 손님이 먼저 눌렀을 수 있으니 중복 실행을 막는다.
+  if (restartTimerId) {
+    clearTimeout(restartTimerId);
+    restartTimerId = null;
+  }
   flow.pin = '';
   flow.name = '';
   flow.photo = '';

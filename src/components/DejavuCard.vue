@@ -41,13 +41,13 @@ const style = computed(() => {
       </div>
       <img class="handle" :src="handleSvg" alt="silver_rain.__" />
       <img class="note" :src="noteSvg" alt="" />
-      <p class="track">{{ displayName }} · DEJAVU</p>
+      <p class="track">권은비 · DEJAVU</p>
     </template>
 
     <div class="photo">
       <div class="photo__inner">
         <img v-if="photo" class="photo__img" :src="photo" alt="" />
-        <p v-else-if="!printOnly" class="photo__placeholder">이 곳에<br />사진이<br />들어가요</p>
+<!--        <p v-else-if="!printOnly" class="photo__placeholder">이 곳에<br />사진이<br />들어가요</p>-->
       </div>
     </div>
 
@@ -128,8 +128,8 @@ const style = computed(() => {
 
 .photo {
   position: absolute;
-  left: 10cqi;
-  top: 18.5cqi;
+  left: 9.5cqi;
+  top: 18.25cqi;
   width: 80cqi;
   height: 111cqi;
   //border-radius: 5.3333cqi;

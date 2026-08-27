@@ -174,6 +174,7 @@ onBeforeUnmount(() => {
   inset: 0;
   overflow: hidden;
   pointer-events: none;
+  transform: scale(1.25);
 }
 
 .portrait {

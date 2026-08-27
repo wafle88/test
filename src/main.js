@@ -307,6 +307,9 @@ ipcMain.handle('codes:clear-used', async () => {
 ipcMain.handle('codes:mark-used', async (event, code) => {
   const digits = String(code ?? '').replace(/[^0-9]/g, '');
   if (digits.length !== 8) return { ok: false, error: '코드 번호 형식이 아닙니다.' };
+  // 만능키(src/utils/masterCode.js 와 같은 값)는 기록에 남기지 않는다.
+  // 렌더러에서 이미 걸러지지만, 파일에 절대 들어가지 않도록 여기서도 막는다.
+  if (digits === '42424242') return { ok: true, master: true };
 
   const list = await readUsedCodes();
   if (list.includes(digits)) return { ok: true, used: list.length };

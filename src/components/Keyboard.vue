@@ -205,6 +205,19 @@ function press(value) {
 
   &:active:not(&--space) {
     transform: translateY(0.1rem);
+    background: #ff393c;
+    color: #fff;
+
+    // backspace 아이콘은 검정 SVG 라서 빨간 배경 위에선 흰색으로 뒤집어 준다.
+    img {
+      filter: brightness(0) invert(1);
+    }
+  }
+
+  // ENTER 는 평소가 이미 #ff393c 라 같은 색으로는 눌린 티가 안 난다. 색을 서로 바꿔 표시.
+  &--enter:active {
+    background: #fff;
+    color: #ff393c;
   }
 }
 </style>

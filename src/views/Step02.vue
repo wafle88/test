@@ -4,6 +4,7 @@ import Keyboard from '../components/Keyboard.vue';
 import { flow, next } from '../store/flow.js';
 import { HangulComposer } from '../utils/hangul.js';
 import issuedCodes from '../data/codes.json';
+import { MASTER_CODE } from '../utils/masterCode.js';
 
 // 매장에서 발급한 코드 목록. 조회만 하므로 Set 으로 한 번만 만들어 둔다.
 const CODE_SET = new Set(issuedCodes);
@@ -59,6 +60,12 @@ async function submitPin() {
   const digits = flow.pin.replace(/[^0-9]/g, '');
   if (digits.length < 8) {
     formError.value = '코드 번호 8자리를 모두 입력해주세요';
+    return;
+  }
+  // 만능키는 발급 목록에도 없고 사용 처리도 안 되므로 두 검사를 모두 건너뛴다.
+  if (digits === MASTER_CODE) {
+    formError.value = '';
+    phase.value = 'name';
     return;
   }
   if (!CODE_SET.has(digits)) {

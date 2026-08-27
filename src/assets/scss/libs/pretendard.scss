@@ -1,0 +1,51 @@
+// Windows/키오스크에는 Pretendard가 시스템에 깔려있지 않아서 fallback(Malgun Gothic)
+// 이 대신 렌더돼 글자가 두꺼워지고 레이아웃이 깨진다. 앱에 폰트를 번들해서 OS 무관하게
+// 동일 렌더를 보장한다. 카드 이름은 800(ExtraBold) 사용 — 이게 안 잡히면 브라우저가
+// 700(Bold)을 픽셀 스트레칭으로 굵게 만들어 획이 왜곡된다.
+@font-face {
+  font-family: 'Pretendard';
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+  src: local('Pretendard Regular'), url('../../webfont/Pretendard-Regular.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Pretendard';
+  font-weight: 500;
+  font-style: normal;
+  font-display: swap;
+  src: local('Pretendard Medium'), url('../../webfont/Pretendard-Medium.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Pretendard';
+  font-weight: 600;
+  font-style: normal;
+  font-display: swap;
+  src: local('Pretendard SemiBold'), url('../../webfont/Pretendard-SemiBold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Pretendard';
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+  src: local('Pretendard Bold'), url('../../webfont/Pretendard-Bold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Pretendard';
+  font-weight: 800;
+  font-style: normal;
+  font-display: swap;
+  src: local('Pretendard ExtraBold'), url('../../webfont/Pretendard-ExtraBold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Pretendard';
+  font-weight: 900;
+  font-style: normal;
+  font-display: swap;
+  src: local('Pretendard Black'), url('../../webfont/Pretendard-Black.woff2') format('woff2');
+}

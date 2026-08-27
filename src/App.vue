@@ -5,6 +5,7 @@ import Step01 from './views/Step01.vue';
 import Step02 from './views/Step02.vue';
 import Step03 from './views/Step03.vue';
 import Step04 from './views/Step04.vue';
+import DejavuCard from './components/DejavuCard.vue';
 import stripPattern from './assets/images/strip_pattern.svg';
 import stripPatternRed from './assets/images/strip_pattern_red.svg';
 import dejavuBg from './assets/images/dejavu_bg_pattern.png';
@@ -14,9 +15,10 @@ import portrait from './assets/images/portrait.png';
 import idCard from './assets/images/id_card.png';
 import testProfileImg from './assets/images/test-profile.png';
 import testSportsImg from './assets/images/test-sports.png';
+import cardBack from './assets/images/card/back.png';
 
 // 첫 진입 시 이미지 pop-in을 막기 위해 앱 부팅 시점에 프리로드
-[stripPattern, stripPatternRed, dejavuBg, dejavuBgRed, step01Bg, portrait, idCard].forEach((src) => {
+[stripPattern, stripPatternRed, dejavuBg, dejavuBgRed, step01Bg, portrait, idCard, cardBack].forEach((src) => {
   const img = new Image();
   img.src = src;
 });
@@ -53,6 +55,8 @@ const showUsedCodes = ref(false);
 const usedCodes = ref([]);
 // F10 으로 개발용 UI(dev-nav, dev-codes) 토글. 초기값은 숨김.
 const showDevUI = ref(false);
+// 실제 인쇄될 카드(사진+이름만) 배치를 54x86mm 그대로 띄워 프린터 정렬 확인용으로 쓴다.
+const showPrintPreview = ref(false);
 
 function handleDevUIToggle(e) {
   if (e.key === 'F10') {
@@ -135,7 +139,23 @@ async function runTestPrint(preset) {
       >
         CODE
       </button>
+      <button
+        class="dev-nav__test"
+        :class="{ active: showPrintPreview }"
+        type="button"
+        @click="showPrintPreview = !showPrintPreview"
+      >
+        MOLD
+      </button>
     </nav>
+
+    <div v-if="showDevUI && showPrintPreview" class="dev-mold">
+      <div class="dev-mold__label">54 × 86 mm</div>
+      <div class="dev-mold__stack">
+        <img class="dev-mold__back" :src="cardBack" alt="" />
+        <DejavuCard width="54mm" height="86mm" :photo="flow.photo" print-only />
+      </div>
+    </div>
 
     <div v-if="showDevUI && isDev && showUsedCodes" class="dev-codes">
       <div class="dev-codes__head">
@@ -191,6 +211,54 @@ async function runTestPrint(preset) {
     padding: 0 8px;
     margin-left: 6px;
     letter-spacing: 0.5px;
+  }
+}
+
+// 실제 프린트되는 영역(54×86mm) 을 화면 위에 그대로 얹어 사진/이름 위치를 눈으로 확인한다.
+// 카드 자체가 흰 배경 (@page 흰색) 이므로 흰 바탕 + 점선 테두리로 종이 위의 위치를 흉내낸다.
+.dev-mold {
+  position: fixed;
+  left: 12px;
+  bottom: 12px;
+  padding: 8px 8px 12px;
+  background: rgba(0, 0, 0, 0.75);
+  border-radius: 6px;
+  z-index: 9999;
+
+  &__label {
+    margin-bottom: 6px;
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+    font-size: 11px;
+    opacity: 0.8;
+    text-align: center;
+    letter-spacing: 0.5px;
+  }
+
+  &__stack {
+    position: relative;
+    width: 54mm;
+    height: 86mm;
+  }
+
+  // 실제 카드 뒷판(back.png) 을 맨 뒤에 깐다. 위에 얹은 인쇄 영역이 반투명해 뒷판이 비쳐 보임.
+  &__back {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  // 인쇄될 영역: back.png 위에 반투명 흰색으로 덮어 프린터가 잉크를 얹을 자리를 표시한다.
+  :deep(.dejavu-card) {
+    position: relative;
+    z-index: 1;
+    background: rgba(0, 0, 0, 0.4);
+    outline: 1px dashed rgba(255, 60, 60, 0.9);
+    outline-offset: -1px;
   }
 }
 

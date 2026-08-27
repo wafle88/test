@@ -129,7 +129,7 @@ const style = computed(() => {
 .photo {
   position: absolute;
   left: 10cqi;
-  top: 20cqi;
+  top: 18.5cqi;
   width: 80cqi;
   height: 111cqi;
   //border-radius: 5.3333cqi;

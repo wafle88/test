@@ -596,7 +596,8 @@ var { spawn } = require("node:child_process");
 require("node:os");
 if (require_electron_squirrel_startup()) app.quit();
 app.commandLine.appendSwitch("force-color-profile", "srgb");
-var CARD_PRINTER_NAME = "IDP_SMART_51_Printer_2";
+var CARD_PRINTER_PATTERN = /idp.*smart.*51/i;
+var CARD_PRINTER_FALLBACK = "IDP_SMART_51_Printer_2";
 var CARD_COLOR_MODEL = "Premium";
 var CARD_RESIN_EXTRACTION = "NotUse";
 var CARD_SMART_MODE = "Standard";
@@ -616,7 +617,26 @@ var CARD_PAGE_INCH = {
 	width: 54 / 25.4,
 	height: 86 / 25.4
 };
+var CARD_PAGE_MICRONS = {
+	width: 54e3,
+	height: 86e3
+};
 var PRINT_RENDER_TIMEOUT = 15e3;
+async function resolveCardPrinter(webContents) {
+	try {
+		const printers = await webContents.getPrintersAsync();
+		const match = printers.find((p) => [
+			p.name,
+			p.displayName,
+			p.description
+		].some((n) => typeof n === "string" && CARD_PRINTER_PATTERN.test(n)));
+		if (match) return match.name;
+		console.warn("[print] IDP SMART-51 프린터를 목록에서 찾지 못해 백업 이름으로 진행:", CARD_PRINTER_FALLBACK, "(감지된 프린터:", printers.map((p) => p.name).join(", ") || "없음", ")");
+	} catch (err) {
+		console.warn("[print] 프린터 목록 조회 실패, 백업 이름 사용:", err.message);
+	}
+	return CARD_PRINTER_FALLBACK;
+}
 async function withPrintCardWindow(payload, action) {
 	const win = new BrowserWindow({
 		show: false,
@@ -653,11 +673,11 @@ function renderCardPdf(payload) {
 		}
 	}));
 }
-function runLp(pdfBuffer) {
+function runLp(pdfBuffer, printerName) {
 	return new Promise((resolve, reject) => {
 		const child = spawn("/usr/bin/lp", [
 			"-d",
-			CARD_PRINTER_NAME,
+			printerName,
 			"-o",
 			`ColorModel=${CARD_COLOR_MODEL}`,
 			"-o",
@@ -689,14 +709,46 @@ function runLp(pdfBuffer) {
 	});
 }
 async function printCardToPrinter(payload) {
-	const pdf = await renderCardPdf(payload);
-	console.log(`[print] PDF ready, ${pdf.length} bytes → ${CARD_PRINTER_NAME} (${CARD_COLOR_MODEL})`);
-	await runLp(pdf);
-	return {
-		success: true,
-		printer: CARD_PRINTER_NAME,
-		colorModel: CARD_COLOR_MODEL
-	};
+	return withPrintCardWindow(payload, async (win) => {
+		const printerName = await resolveCardPrinter(win.webContents);
+		console.log(`[print] 사용 프린터: ${printerName} (platform=${process.platform})`);
+		if (process.platform === "win32") {
+			await new Promise((resolve, reject) => {
+				win.webContents.print({
+					silent: true,
+					printBackground: true,
+					deviceName: printerName,
+					pageSize: CARD_PAGE_MICRONS,
+					margins: { marginType: "none" }
+				}, (ok, failureReason) => {
+					if (ok) resolve();
+					else reject(/* @__PURE__ */ new Error(`Windows 인쇄 실패: ${failureReason || "unknown"}`));
+				});
+			});
+			return {
+				success: true,
+				printer: printerName
+			};
+		}
+		const pdf = await win.webContents.printToPDF({
+			printBackground: true,
+			preferCSSPageSize: true,
+			pageSize: CARD_PAGE_INCH,
+			margins: {
+				top: 0,
+				bottom: 0,
+				left: 0,
+				right: 0
+			}
+		});
+		console.log(`[print] PDF ready, ${pdf.length} bytes → ${printerName} (${CARD_COLOR_MODEL})`);
+		await runLp(pdf, printerName);
+		return {
+			success: true,
+			printer: printerName,
+			colorModel: CARD_COLOR_MODEL
+		};
+	});
 }
 function cardOutputDir() {
 	return app.isPackaged ? path.join(app.getPath("documents"), "dejavu_cards") : path.join(__dirname, "../../cards");

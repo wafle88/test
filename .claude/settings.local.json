@@ -27,7 +27,10 @@
       "Bash(git restore *)",
       "Bash(git remote *)",
       "Bash(git push *)",
-      "mcp__plugin_figma_figma__get_design_context"
+      "mcp__plugin_figma_figma__get_design_context",
+      "Bash(pip3 install *)",
+      "Bash(brew list *)",
+      "Bash(sw_vers)"
     ]
   }
 }

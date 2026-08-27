@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, ref } from 'vue';
+import { onMounted, onUnmounted, ref } from 'vue';
 import { flow, goTo } from './store/flow.js';
 import Step01 from './views/Step01.vue';
 import Step02 from './views/Step02.vue';
@@ -51,9 +51,23 @@ async function urlToDataUrl(src) {
 const isDev = ref(false);
 const showUsedCodes = ref(false);
 const usedCodes = ref([]);
+// F10 으로 개발용 UI(dev-nav, dev-codes) 토글. 초기값은 숨김.
+const showDevUI = ref(false);
+
+function handleDevUIToggle(e) {
+  if (e.key === 'F10') {
+    e.preventDefault();
+    showDevUI.value = !showDevUI.value;
+  }
+}
 
 onMounted(async () => {
   isDev.value = (await window.dejavuCard?.isDev?.()) === true;
+  window.addEventListener('keydown', handleDevUIToggle);
+});
+
+onUnmounted(() => {
+  window.removeEventListener('keydown', handleDevUIToggle);
 });
 
 function formatCode(code) {
@@ -94,7 +108,7 @@ async function runTestPrint(preset) {
 <template>
   <div class="stage">
     <component :is="steps[flow.step]" />
-    <nav class="dev-nav">
+    <nav v-if="showDevUI" class="dev-nav">
       <button
         v-for="id in stepIds"
         :key="id"
@@ -123,7 +137,7 @@ async function runTestPrint(preset) {
       </button>
     </nav>
 
-    <div v-if="isDev && showUsedCodes" class="dev-codes">
+    <div v-if="showDevUI && isDev && showUsedCodes" class="dev-codes">
       <div class="dev-codes__head">
         <span>사용된 코드 {{ usedCodes.length }}개</span>
         <button type="button" @click="loadUsedCodes">새로고침</button>

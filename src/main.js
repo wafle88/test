@@ -17,7 +17,11 @@ app.commandLine.appendSwitch('force-color-profile', 'srgb');
 //   ColorModel=Premium  → /Library/Printers/IDP/cardprinter51_p.icm (Premium 리본)
 //   ColorModel=Standard → /Library/Printers/IDP/cardprinter51_s.icm (Standard 리본)
 // 이 값을 lp 옵션으로 넘겨야 CUPS 가 자동으로 해당 ICC 로 색보정을 걸어 프린터에 보낸다.
-const CARD_PRINTER_NAME = 'IDP_SMART_51_Printer_2';
+// macOS 는 CUPS 이름(공백→언더스코어), Windows 는 드라이버 표시명(공백/하이픈 포함)이라
+// OS 마다 이름이 달라진다. 그래서 하드코딩 대신 이름 패턴으로 자동 감지한다.
+const CARD_PRINTER_PATTERN = /idp.*smart.*51/i;
+// 자동 감지 실패 시의 백업. 개발기(macOS) 에 실제로 잡혀 있는 이름.
+const CARD_PRINTER_FALLBACK = 'IDP_SMART_51_Printer_2';
 // SS-IDDC-P-YMCKO 리본. Premium/Standard 프로파일 차이가 거의 없어서 Premium 유지.
 const CARD_COLOR_MODEL = 'Premium';
 // 사진 카드는 YMC 합성 블랙으로만 표현. K resin 패널을 쓰면 사진의 어두운 부분에
@@ -56,7 +60,34 @@ const createWindow = () => {
 // 디자인팀 지정 카드 규격(54 x 86mm)을 인치로 환산.
 // PrintCard.vue 의 @page 규칙이 우선이고, 이 값은 규칙이 먹지 않았을 때의 안전망이다.
 const CARD_PAGE_INCH = { width: 54 / 25.4, height: 86 / 25.4 };
+// webContents.print(Windows 경로) 는 pageSize 를 마이크론 단위로 받는다.
+const CARD_PAGE_MICRONS = { width: 54000, height: 86000 };
 const PRINT_RENDER_TIMEOUT = 15000;
+
+// getPrintersAsync 로 잡힌 프린터 목록에서 이름 패턴과 매칭되는 항목을 찾는다.
+// name / displayName / description 을 모두 검사하는 이유는 OS·드라이버에 따라
+// 사람이 보는 이름과 CUPS/Windows 내부 이름이 다르기 때문.
+async function resolveCardPrinter(webContents) {
+  try {
+    const printers = await webContents.getPrintersAsync();
+    const match = printers.find((p) =>
+      [p.name, p.displayName, p.description].some(
+        (n) => typeof n === 'string' && CARD_PRINTER_PATTERN.test(n),
+      ),
+    );
+    if (match) return match.name;
+    console.warn(
+      '[print] IDP SMART-51 프린터를 목록에서 찾지 못해 백업 이름으로 진행:',
+      CARD_PRINTER_FALLBACK,
+      '(감지된 프린터:',
+      printers.map((p) => p.name).join(', ') || '없음',
+      ')',
+    );
+  } catch (err) {
+    console.warn('[print] 프린터 목록 조회 실패, 백업 이름 사용:', err.message);
+  }
+  return CARD_PRINTER_FALLBACK;
+}
 
 // 화면용 창은 vw 기반 rem 위에 올라가 있어 그대로 인쇄하면 크기가 어긋난다.
 // 숨김 창에 카드만 mm 로 그린 뒤 그 창을 대상으로 원하는 작업(PDF 저장 or 실제 인쇄)을 시킨다.
@@ -115,10 +146,10 @@ function renderCardPdf(payload) {
 // lp 커맨드로 PDF 를 지정 프린터에 보내면서 ColorModel(=ICC 프로파일) 옵션을 얹는다.
 // webContents.print 는 CUPS 옵션을 못 넘겨 ICC 를 걸 수 없어서 이 경로를 쓴다.
 // 파일 인자 대신 stdin 으로 PDF 를 흘려보내서 tmp 경로 접근 문제를 아예 우회한다.
-function runLp(pdfBuffer) {
+function runLp(pdfBuffer, printerName) {
   return new Promise((resolve, reject) => {
     const args = [
-      '-d', CARD_PRINTER_NAME,
+      '-d', printerName,
       '-o', `ColorModel=${CARD_COLOR_MODEL}`,
       '-o', `SmartResinExtraction=${CARD_RESIN_EXTRACTION}`,
       '-o', `SmartMode=${CARD_SMART_MODE}`,
@@ -145,11 +176,43 @@ function runLp(pdfBuffer) {
   });
 }
 
+// macOS: PDF 로 렌더 → lp 로 CUPS ICC 색보정 걸어 전송 (색 튐 방지)
+// Windows: CUPS/lp 가 없어서 webContents.print(silent) 로 직접 인쇄.
+//          색보정은 Windows 프린터 드라이버 프리셋에 위임 (앱에서 제어 불가).
 async function printCardToPrinter(payload) {
-  const pdf = await renderCardPdf(payload);
-  console.log(`[print] PDF ready, ${pdf.length} bytes → ${CARD_PRINTER_NAME} (${CARD_COLOR_MODEL})`);
-  await runLp(pdf);
-  return { success: true, printer: CARD_PRINTER_NAME, colorModel: CARD_COLOR_MODEL };
+  return withPrintCardWindow(payload, async (win) => {
+    const printerName = await resolveCardPrinter(win.webContents);
+    console.log(`[print] 사용 프린터: ${printerName} (platform=${process.platform})`);
+
+    if (process.platform === 'win32') {
+      await new Promise((resolve, reject) => {
+        win.webContents.print(
+          {
+            silent: true,
+            printBackground: true,
+            deviceName: printerName,
+            pageSize: CARD_PAGE_MICRONS,
+            margins: { marginType: 'none' },
+          },
+          (ok, failureReason) => {
+            if (ok) resolve();
+            else reject(new Error(`Windows 인쇄 실패: ${failureReason || 'unknown'}`));
+          },
+        );
+      });
+      return { success: true, printer: printerName };
+    }
+
+    const pdf = await win.webContents.printToPDF({
+      printBackground: true,
+      preferCSSPageSize: true,
+      pageSize: CARD_PAGE_INCH,
+      margins: { top: 0, bottom: 0, left: 0, right: 0 },
+    });
+    console.log(`[print] PDF ready, ${pdf.length} bytes → ${printerName} (${CARD_COLOR_MODEL})`);
+    await runLp(pdf, printerName);
+    return { success: true, printer: printerName, colorModel: CARD_COLOR_MODEL };
+  });
 }
 
 // 발급된 카드 PDF가 쌓이는 폴더.

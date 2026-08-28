@@ -1,7 +1,7 @@
 <script setup>
-import { computed, ref } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref } from 'vue';
 import Keyboard from '../components/Keyboard.vue';
-import { flow, next } from '../store/flow.js';
+import { flow, goTo, next, resetFlow } from '../store/flow.js';
 import { HangulComposer } from '../utils/hangul.js';
 import issuedCodes from '../data/codes.json';
 import { MASTER_CODE } from '../utils/masterCode.js';
@@ -50,6 +50,24 @@ const isPlaceholder = computed(() =>
 
 const formError = ref('');
 
+// 손님이 자리를 뜨거나 멈춰 있으면 다음 손님을 위해 처음 화면으로 돌아간다.
+const IDLE_TIMEOUT_MS = 30000;
+let idleTimerId = null;
+
+function armIdleTimer() {
+  if (idleTimerId) clearTimeout(idleTimerId);
+  idleTimerId = setTimeout(() => {
+    resetFlow();
+    goTo(1);
+  }, IDLE_TIMEOUT_MS);
+}
+
+onMounted(armIdleTimer);
+
+onBeforeUnmount(() => {
+  if (idleTimerId) clearTimeout(idleTimerId);
+});
+
 const instruction = computed(() =>
   phase.value === 'pin'
     ? '매장에서 발급받은 코드 번호를 입력하세요'
@@ -93,6 +111,7 @@ function submitName() {
 }
 
 function onKey(k) {
+  armIdleTimer();
   if (phase.value === 'pin') {
     if (k === 'BACKSPACE') {
       flow.pin = flow.pin.slice(0, -1);
@@ -122,6 +141,7 @@ function onKey(k) {
 }
 
 function submit() {
+  armIdleTimer();
   if (phase.value === 'pin') submitPin();
   else submitName();
 }

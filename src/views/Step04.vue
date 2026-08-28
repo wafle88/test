@@ -13,7 +13,7 @@ let restartTimerId = null;
 let minWaitDone = false;
 let printDone = false;
 // 완료 화면을 보여준 뒤 처음 화면으로 되돌아가기까지의 시간.
-const AUTO_RESTART_MS = 3000;
+const AUTO_RESTART_MS = 6000;
 
 function maybeFinish() {
   if (!minWaitDone || !printDone) return;

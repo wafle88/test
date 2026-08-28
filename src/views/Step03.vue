@@ -1,7 +1,7 @@
 <script setup>
-import { onMounted, onBeforeUnmount, ref } from 'vue';
+import { onMounted, onBeforeUnmount, ref, watch } from 'vue';
 import HeartLayout from '../components/HeartLayout.vue';
-import { flow, next } from '../store/flow.js';
+import { flow, goTo, next, resetFlow } from '../store/flow.js';
 
 const phase = ref('preview'); // 'preview' | 'countdown' | 'confirm'
 const count = ref(3);
@@ -13,6 +13,38 @@ let stream = null;
 let countdownId = null;
 let flashTimerId = null;
 let audioCtx = null;
+// 손님이 촬영 시작을 누르지 않거나, 촬영 후 재촬영/그대로 사용 중 아무 것도 안 누르면
+// 다음 손님을 위해 자동으로 처음 화면으로 돌린다. countdown 은 3초 자동 진행이라 idle 아님.
+const IDLE_TIMEOUT_MS = 30000;
+let idleTimerId = null;
+
+function clearIdleTimer() {
+  if (idleTimerId) {
+    clearTimeout(idleTimerId);
+    idleTimerId = null;
+  }
+}
+
+function armIdleTimer() {
+  clearIdleTimer();
+  idleTimerId = setTimeout(() => {
+    // 촬영해 둔 이미지가 다음 손님에게 넘어가지 않도록 로컬 상태도 명시적으로 비운다.
+    // (컴포넌트 언마운트로도 사라지지만, 의도를 명확히 남기는 편이 안전하다.)
+    capturedUrl.value = '';
+    phase.value = 'preview';
+    resetFlow();
+    goTo(1);
+  }, IDLE_TIMEOUT_MS);
+}
+
+watch(
+  phase,
+  (p) => {
+    if (p === 'countdown') clearIdleTimer();
+    else armIdleTimer();
+  },
+  { immediate: true },
+);
 
 function playShutter() {
   try {
@@ -117,6 +149,7 @@ onMounted(startCamera);
 onBeforeUnmount(() => {
   if (countdownId) clearInterval(countdownId);
   if (flashTimerId) clearTimeout(flashTimerId);
+  clearIdleTimer();
   stopCamera();
   if (audioCtx) {
     audioCtx.close().catch(() => {});

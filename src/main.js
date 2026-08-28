@@ -43,6 +43,9 @@ const createWindow = () => {
     icon: devIconPath,
     // Windows/Linux 상단 메뉴바(File/Edit/View…) 숨김. 무인 키오스크라 필요 없음.
     autoHideMenuBar: true,
+    // 패키징된 운영 앱은 무인 키오스크로 실행: 작업표시줄/시작메뉴 숨김, Alt+Tab 억제.
+    // 개발 실행에서는 창 모드로 두어야 디버깅과 다른 창 전환이 편하다.
+    kiosk: app.isPackaged,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },

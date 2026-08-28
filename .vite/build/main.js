@@ -609,6 +609,7 @@ var createWindow = () => {
 		height: 1080,
 		icon: devIconPath,
 		autoHideMenuBar: true,
+		kiosk: app.isPackaged,
 		webPreferences: { preload: path.join(__dirname, "preload.js") }
 	});
 	mainWindow.loadURL("http://localhost:5173");

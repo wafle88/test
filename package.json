@@ -1,8 +1,8 @@
 {
   "name": "dejavu",
   "productName": "dejavu",
-  "version": "1.0.0",
-  "description": "My Electron application description",
+  "version": "2.0.0",
+  "description": "dejavu",
   "main": ".vite/build/main.js",
   "private": true,
   "scripts": {

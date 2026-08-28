@@ -299,9 +299,9 @@ ipcMain.handle('codes:reveal-file', async () => {
 
 ipcMain.handle('codes:list-used', () => readUsedCodes());
 
-// 개발 중 반복 테스트용. 패키징된 앱에서는 실수로라도 지워지면 안 되므로 막는다.
+// 운영 중에도 운영자가 F10 → CODE → 초기화 로 사용 기록을 비울 수 있어야 한다.
+// (재고 리셋, 테스트 코드 정리 등) dev-nav 자체가 F10 히든 토글이라 우발 삭제는 어렵다.
 ipcMain.handle('codes:clear-used', async () => {
-  if (app.isPackaged) return { ok: false, error: '패키징된 앱에서는 초기화할 수 없습니다.' };
   usedCodesCache = [];
   try {
     await writeUsedCodes([]);

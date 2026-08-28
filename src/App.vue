@@ -131,7 +131,6 @@ async function runTestPrint(preset) {
         {{ preset.label }}
       </button>
       <button
-        v-if="isDev"
         class="dev-nav__test"
         :class="{ active: showUsedCodes }"
         type="button"
@@ -157,7 +156,7 @@ async function runTestPrint(preset) {
       </div>
     </div>
 
-    <div v-if="showDevUI && isDev && showUsedCodes" class="dev-codes">
+    <div v-if="showDevUI && showUsedCodes" class="dev-codes">
       <div class="dev-codes__head">
         <span>사용된 코드 {{ usedCodes.length }}개</span>
         <button type="button" @click="loadUsedCodes">새로고침</button>

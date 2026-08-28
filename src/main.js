@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
+const { app, BrowserWindow, Menu, ipcMain, dialog, shell } = require('electron');
 const path = require('node:path');
 const fs = require('node:fs/promises');
 const { spawn } = require('node:child_process');
@@ -41,6 +41,8 @@ const createWindow = () => {
     width: 1920,
     height: 1080,
     icon: devIconPath,
+    // Windows/Linux 상단 메뉴바(File/Edit/View…) 숨김. 무인 키오스크라 필요 없음.
+    autoHideMenuBar: true,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
     },
@@ -54,7 +56,10 @@ const createWindow = () => {
     );
   }
 
-  mainWindow.webContents.openDevTools();
+  // 패키징된 운영 빌드에서는 DevTools 를 열지 않는다. 개발 실행(electron-forge start) 때만 자동으로 뜬다.
+  if (!app.isPackaged) {
+    mainWindow.webContents.openDevTools();
+  }
 };
 
 // 디자인팀 지정 카드 규격(54 x 86mm)을 인치로 환산.
@@ -359,6 +364,8 @@ ipcMain.handle('card:print', async (event, payload) => {
 app.whenReady().then(async () => {
   console.log('[codes] 사용 기록 파일:', usedCodesPath());
   await ensureUsedCodesFile();
+  // 앱 메뉴(macOS 상단 메뉴 항목 / Windows·Linux 창 메뉴바) 제거. 키오스크 UI 라 필요 없음.
+  Menu.setApplicationMenu(null);
   if (process.platform === 'darwin' && app.dock) {
     app.dock.setIcon(devIconPath);
   }

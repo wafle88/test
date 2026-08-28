@@ -589,7 +589,7 @@ var require_electron_squirrel_startup = /* @__PURE__ */ __commonJSMin(((exports,
 }));
 //#endregion
 //#region src/main.js
-var { app, BrowserWindow, ipcMain, dialog, shell } = require("electron");
+var { app, BrowserWindow, Menu, ipcMain, dialog, shell } = require("electron");
 var path = require("node:path");
 var fs = require("node:fs/promises");
 var { spawn } = require("node:child_process");
@@ -608,10 +608,11 @@ var createWindow = () => {
 		width: 1920,
 		height: 1080,
 		icon: devIconPath,
+		autoHideMenuBar: true,
 		webPreferences: { preload: path.join(__dirname, "preload.js") }
 	});
 	mainWindow.loadURL("http://localhost:5173");
-	mainWindow.webContents.openDevTools();
+	if (!app.isPackaged) mainWindow.webContents.openDevTools();
 };
 var CARD_PAGE_INCH = {
 	width: 54 / 25.4,
@@ -878,6 +879,7 @@ ipcMain.handle("card:print", async (event, payload) => {
 app.whenReady().then(async () => {
 	console.log("[codes] 사용 기록 파일:", usedCodesPath());
 	await ensureUsedCodesFile();
+	Menu.setApplicationMenu(null);
 	if (process.platform === "darwin" && app.dock) app.dock.setIcon(devIconPath);
 	createWindow();
 	app.on("activate", () => {
